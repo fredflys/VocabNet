@@ -1,0 +1,196 @@
+import { useState, useEffect, createContext } from 'react'
+import BookshelfView from './components/BookshelfView'
+import ProcessingView from './components/ProcessingView'
+import VocabView from './components/VocabView'
+import StudyDashboard from './components/StudyDashboard'
+import UploadView from './components/UploadView'
+import SettingsModal from './components/SettingsModal'
+import { fetchSM2DataGlobal, updateSM2DataGlobal } from './utils/studyStore'
+import IntelligenceNebula from './components/IntelligenceNebula'
+import TopLoadingBar from './components/common/TopLoadingBar'
+import { AnimatePresence } from 'framer-motion'
+
+export const AppContext = createContext()
+
+const API = 'http://localhost:8000'
+
+// Legacy Migration Logic
+const LEGACY_SETTINGS_KEY = 'audioprep_settings'
+const NEW_SETTINGS_KEY = 'vocabnet_settings'
+
+function App() {
+  const [view, setView] = useState('dashboard') // dashboard | library | processing | vocab | upload
+  const [books, setBooks] = useState([])
+  const [selectedBook, setSelectedBook] = useState(null)
+  const [sm2Data, setSm2Data] = useState({})
+  const [jobId, setJobId] = useState(null)
+  const [processingFileName, setProcessingFileName] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
+  const [showNebula, setShowNebula] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const [settings, setSettings] = useState(() => {
+    // Migration: Check for legacy settings first
+    const legacy = localStorage.getItem(LEGACY_SETTINGS_KEY)
+    if (legacy) {
+      localStorage.setItem(NEW_SETTINGS_KEY, legacy)
+      localStorage.removeItem(LEGACY_SETTINGS_KEY)
+      return JSON.parse(legacy)
+    }
+    const saved = localStorage.getItem(NEW_SETTINGS_KEY)
+    return saved ? JSON.parse(saved) : { ttsVoice: 'en-US-AriaNeural', autoTTS: true }
+  })
+
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true)
+      await Promise.all([fetchBooks(), loadSM2()])
+      setIsLoading(false)
+    }
+    init()
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(NEW_SETTINGS_KEY, JSON.stringify(settings))
+  }, [settings])
+
+  const fetchBooks = async () => {
+    try {
+      const resp = await fetch(`${API}/api/library`)
+      const data = await resp.json()
+      setBooks(data)
+    } catch (err) {
+      console.error('Failed to fetch books', err)
+    }
+  }
+
+  const loadSM2 = async () => {
+    const data = await fetchSM2DataGlobal()
+    setSm2Data(data)
+  }
+
+  const handleUpdateSM2 = async (lemma, newState) => {
+    const updated = { ...sm2Data, [lemma]: newState }
+    setSm2Data(updated)
+    await updateSM2DataGlobal({ [lemma]: newState })
+  }
+
+  const handleBookSelect = async (bookInput, forceNebula = false) => {
+    setIsLoading(true)
+    try {
+      // Handle both book objects and string IDs
+      const bookId = typeof bookInput === 'string' ? bookInput : bookInput.id
+      const resp = await fetch(`${API}/api/library/${bookId}`)
+      if (!resp.ok) throw new Error('Failed to load book details')
+      const fullBook = await resp.json()
+      setSelectedBook(fullBook)
+      
+      if (forceNebula) {
+        setShowNebula(true)
+      } else {
+        setShowNebula(false)
+        setView('vocab')
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Could not load book details. Please try re-processing the book.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleProcessing = (id, fileName) => {
+    setJobId(id)
+    setProcessingFileName(fileName)
+    setView('processing')
+  }
+
+  const handleUploadComplete = (result) => {
+    fetchBooks()
+    setSelectedBook(result)
+    setView('vocab')
+  }
+
+  return (
+    <AppContext.Provider value={{ settings, setSettings, setIsLoading }}>
+      <div className="app-container">
+        <TopLoadingBar isLoading={isLoading} />
+        <header className="app-header">
+          <div className="logo" onClick={() => setView('dashboard')}>VocabNet</div>
+          
+          <nav className="main-nav">
+            <button className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')}>Study</button>
+            <button className={view === 'library' ? 'active' : ''} onClick={() => setView('library')}>Library</button>
+          </nav>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <button className={`btn--new-volume ${view === 'upload' ? 'active' : ''}`} onClick={() => setView('upload')}>+ New Volume</button>
+            <div className="nav-divider" style={{ height: '30px' }}></div>
+            <button className="btn--secondary" onClick={() => setShowSettings(true)} style={{ padding: '0.6rem', borderRadius: '12px' }}>⚙️</button>
+          </div>
+        </header>
+
+        <main className="app-main">
+          {view === 'dashboard' && (
+            <StudyDashboard 
+              books={books} 
+              sm2Data={sm2Data} 
+              onSelectBook={handleBookSelect} 
+            />
+          )}
+
+          {view === 'library' && (
+            <BookshelfView 
+              books={books} 
+              onSelect={handleBookSelect} 
+              onUpload={() => setView('upload')}
+              onDeleted={(id) => setBooks(books.filter(b => b.id !== id))}
+              onViewMasterLedger={() => handleBookSelect({ id: 'master' })}
+            />
+          )}
+
+          {view === 'upload' && (
+            <UploadView 
+              onProcessing={handleProcessing}
+              onBack={() => setView('library')} 
+              settings={settings}
+            />
+          )}
+
+          {view === 'processing' && jobId && (
+            <ProcessingView 
+              jobId={jobId} 
+              fileName={processingFileName}
+              onComplete={handleUploadComplete}
+              onCancel={() => setView('library')}
+            />
+          )}
+
+          {view === 'vocab' && selectedBook && (
+            <VocabView 
+              book={selectedBook} 
+              sm2Data={sm2Data} 
+              onUpdate={handleUpdateSM2}
+              onBack={() => setView('library')}
+              onSelectBook={handleBookSelect}
+            />
+          )}
+        </main>
+
+        <AnimatePresence>
+          {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+          {showNebula && selectedBook && (
+            <IntelligenceNebula 
+              entities={selectedBook.entities || []} 
+              bookTitle={selectedBook.title}
+              totalChapters={selectedBook.total_chapters}
+              onClose={() => setShowNebula(false)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </AppContext.Provider>
+  )
+}
+
+export default App

@@ -1,0 +1,596 @@
+{
+  "break the ice": {
+    "meaning": "To initiate conversation in a socially awkward situation",
+    "example": "He told a joke to break the ice at the meeting.",
+    "cefr": "B2",
+    "tip": "Imagine literally breaking a frozen surface to start flowing water"
+  },
+  "bite the bullet": {
+    "meaning": "To endure a painful or difficult situation bravely",
+    "example": "She bit the bullet and told him the truth.",
+    "cefr": "C1",
+    "tip": "Soldiers used to bite bullets during surgery without anesthesia"
+  },
+  "let the cat out of the bag": {
+    "meaning": "To reveal a secret accidentally",
+    "example": "She let the cat out of the bag about the surprise party.",
+    "cefr": "B2",
+    "tip": "Imagine a cat escaping from a bag — once out, you can't hide it again"
+  },
+  "hit the nail on the head": {
+    "meaning": "To describe exactly what is causing a situation or problem",
+    "example": "You hit the nail on the head with that analysis.",
+    "cefr": "B2",
+    "tip": "A carpenter hitting a nail perfectly — precise and accurate"
+  },
+  "once in a blue moon": {
+    "meaning": "Very rarely; almost never",
+    "example": "He only visits once in a blue moon.",
+    "cefr": "B2",
+    "tip": "Blue moons are rare astronomical events — hence 'rarely'"
+  },
+  "piece of cake": {
+    "meaning": "Something very easy to do",
+    "example": "The exam was a piece of cake.",
+    "cefr": "B1",
+    "tip": "Eating cake is easy and pleasant — so is the task"
+  },
+  "spill the beans": {
+    "meaning": "To reveal secret information",
+    "example": "Someone spilled the beans about the merger.",
+    "cefr": "B2",
+    "tip": "Beans scattering everywhere — secrets spreading uncontrollably"
+  },
+  "cost an arm and a leg": {
+    "meaning": "To be very expensive",
+    "example": "That sports car costs an arm and a leg.",
+    "cefr": "B2",
+    "tip": "Giving up body parts = extremely high cost"
+  },
+  "beat around the bush": {
+    "meaning": "To avoid talking about what is important; to delay",
+    "example": "Stop beating around the bush and tell me what happened.",
+    "cefr": "B2",
+    "tip": "Hunters used to beat bushes to drive out game — circling, not going straight"
+  },
+  "under the weather": {
+    "meaning": "Feeling ill or sick",
+    "example": "I'm feeling a bit under the weather today.",
+    "cefr": "B2",
+    "tip": "Sailors went below deck in bad weather when sick"
+  },
+  "burn the midnight oil": {
+    "meaning": "To work late into the night",
+    "example": "She's been burning the midnight oil to finish the project.",
+    "cefr": "C1",
+    "tip": "Before electricity, oil lamps were burned for light when working late"
+  },
+  "the last straw": {
+    "meaning": "The final problem in a series that makes the situation unbearable",
+    "example": "His rude comment was the last straw.",
+    "cefr": "B2",
+    "tip": "From 'the straw that broke the camel's back' — one final tiny weight"
+  },
+  "turn a blind eye": {
+    "meaning": "To ignore something that you know is wrong",
+    "example": "The manager turned a blind eye to the violations.",
+    "cefr": "C1",
+    "tip": "Admiral Nelson literally put telescope to his blind eye to 'not see' a signal"
+  },
+  "a blessing in disguise": {
+    "meaning": "Something that seems bad at first but turns out to be good",
+    "example": "Losing that job was a blessing in disguise.",
+    "cefr": "B2",
+    "tip": "A good thing wearing a costume — hidden benefit"
+  },
+  "actions speak louder than words": {
+    "meaning": "What you do is more important than what you say",
+    "example": "He promised to help, but actions speak louder than words.",
+    "cefr": "B1",
+    "tip": "Doing is stronger proof than talking"
+  },
+  "add insult to injury": {
+    "meaning": "To make a bad situation worse",
+    "example": "To add insult to injury, it started raining after we got a flat tire.",
+    "cefr": "C1",
+    "tip": "First hurt, then humiliated — double damage"
+  },
+  "back to the drawing board": {
+    "meaning": "To start over because the previous plan failed",
+    "example": "The prototype failed, so it's back to the drawing board.",
+    "cefr": "B2",
+    "tip": "Architects start new designs at their drawing board"
+  },
+  "barking up the wrong tree": {
+    "meaning": "To make a false assumption or pursue a mistaken course",
+    "example": "If you think I stole it, you're barking up the wrong tree.",
+    "cefr": "C1",
+    "tip": "A dog barking at a tree where the cat already left"
+  },
+  "cut corners": {
+    "meaning": "To do something in the easiest or cheapest way, sacrificing quality",
+    "example": "The builder cut corners on the foundation.",
+    "cefr": "B2",
+    "tip": "Taking a shortcut by cutting the corner of a path"
+  },
+  "get out of hand": {
+    "meaning": "To become out of control",
+    "example": "The argument got out of hand quickly.",
+    "cefr": "B2",
+    "tip": "Something escaping from your hand — you've lost grip"
+  },
+  "hang in there": {
+    "meaning": "To persist through difficulty; don't give up",
+    "example": "I know it's hard, but hang in there.",
+    "cefr": "B1",
+    "tip": "Like hanging from a ledge — keep holding on"
+  },
+  "jump on the bandwagon": {
+    "meaning": "To join a popular trend or activity",
+    "example": "Everyone jumped on the bandwagon after the team started winning.",
+    "cefr": "C1",
+    "tip": "A parade wagon — jumping on to join the popular crowd"
+  },
+  "kill two birds with one stone": {
+    "meaning": "To accomplish two things at once",
+    "example": "By studying on the train, I kill two birds with one stone.",
+    "cefr": "B2",
+    "tip": "One throw, two targets achieved"
+  },
+  "miss the boat": {
+    "meaning": "To miss an opportunity",
+    "example": "If we don't act now, we'll miss the boat.",
+    "cefr": "B2",
+    "tip": "The ship has sailed without you"
+  },
+  "no pain no gain": {
+    "meaning": "You have to work hard and endure difficulty to achieve results",
+    "example": "Training is exhausting, but no pain no gain.",
+    "cefr": "B1",
+    "tip": "Suffering leads to improvement"
+  },
+  "on thin ice": {
+    "meaning": "In a risky or dangerous situation",
+    "example": "After missing two deadlines, she's on thin ice with her boss.",
+    "cefr": "B2",
+    "tip": "Walking on ice that might crack — one wrong step and you fall"
+  },
+  "pull someone's leg": {
+    "meaning": "To joke with or tease someone",
+    "example": "I was just pulling your leg — I didn't mean it seriously.",
+    "cefr": "B2",
+    "tip": "Playfully tugging someone's leg to make them stumble"
+  },
+  "see eye to eye": {
+    "meaning": "To agree with someone",
+    "example": "We don't always see eye to eye on politics.",
+    "cefr": "B2",
+    "tip": "Looking at each other at the same level — equal perspective"
+  },
+  "sit on the fence": {
+    "meaning": "To avoid making a decision or taking a side",
+    "example": "Stop sitting on the fence and choose.",
+    "cefr": "C1",
+    "tip": "Balanced on a fence, not falling to either side"
+  },
+  "speak of the devil": {
+    "meaning": "Said when the person you were just talking about appears",
+    "example": "Speak of the devil — here comes John now!",
+    "cefr": "B2",
+    "tip": "In old superstition, speaking of the devil would summon him"
+  },
+  "steal someone's thunder": {
+    "meaning": "To take credit or attention away from someone",
+    "example": "She stole my thunder by announcing it first.",
+    "cefr": "C1",
+    "tip": "Taking someone else's dramatic moment"
+  },
+  "take it with a grain of salt": {
+    "meaning": "To not take something too seriously; to be skeptical",
+    "example": "Take his advice with a grain of salt.",
+    "cefr": "C1",
+    "tip": "A little salt makes something more palatable — adjust your belief"
+  },
+  "the ball is in your court": {
+    "meaning": "It is your decision or responsibility now",
+    "example": "I've made my offer — the ball is in your court.",
+    "cefr": "B2",
+    "tip": "In tennis, your turn to play"
+  },
+  "through thick and thin": {
+    "meaning": "Through good times and bad times; loyal in every situation",
+    "example": "They've been friends through thick and thin.",
+    "cefr": "C1",
+    "tip": "Walking through both dense forest and open ground — never quitting"
+  },
+  "throw in the towel": {
+    "meaning": "To give up; to surrender",
+    "example": "After three failed attempts, he threw in the towel.",
+    "cefr": "B2",
+    "tip": "In boxing, a corner throws a towel to stop the fight"
+  },
+  "up in the air": {
+    "meaning": "Uncertain; not yet decided",
+    "example": "The plans for next year are still up in the air.",
+    "cefr": "B2",
+    "tip": "Something floating, not grounded or settled"
+  },
+  "when pigs fly": {
+    "meaning": "Something that will never happen",
+    "example": "He'll clean his room when pigs fly.",
+    "cefr": "B2",
+    "tip": "Pigs can't fly — so the event is impossible"
+  },
+  "wrap your head around": {
+    "meaning": "To understand something complicated",
+    "example": "I just can't wrap my head around quantum physics.",
+    "cefr": "C1",
+    "tip": "Trying to mentally embrace a complex idea"
+  },
+  "a dime a dozen": {
+    "meaning": "Very common and of no particular value",
+    "example": "Opinions are a dime a dozen around here.",
+    "cefr": "C1",
+    "tip": "So cheap you could buy twelve for a dime"
+  },
+  "at the drop of a hat": {
+    "meaning": "Without hesitation; immediately",
+    "example": "She'd travel at the drop of a hat.",
+    "cefr": "C1",
+    "tip": "Dropping a hat was an old signal to start something instantly"
+  },
+  "back to square one": {
+    "meaning": "To go back to the beginning",
+    "example": "The deal collapsed, so we're back to square one.",
+    "cefr": "B2",
+    "tip": "Like a board game — returning to the first square"
+  },
+  "bend over backwards": {
+    "meaning": "To try very hard to help or please someone",
+    "example": "She bent over backwards to make us comfortable.",
+    "cefr": "C1",
+    "tip": "Physically contorting yourself — extreme effort"
+  },
+  "by the skin of your teeth": {
+    "meaning": "Just barely; by a very narrow margin",
+    "example": "He passed the exam by the skin of his teeth.",
+    "cefr": "C1",
+    "tip": "Teeth have almost no skin — the thinnest possible margin"
+  },
+  "cry over spilled milk": {
+    "meaning": "To be upset about something that has already happened and cannot be changed",
+    "example": "There's no use crying over spilled milk — let's move on.",
+    "cefr": "B2",
+    "tip": "Once milk is spilled, you can't put it back — so why be upset?"
+  },
+  "down to earth": {
+    "meaning": "Practical and realistic; humble",
+    "example": "Despite being famous, she's very down to earth.",
+    "cefr": "B2",
+    "tip": "Feet on the ground, not floating in fantasy"
+  },
+  "every cloud has a silver lining": {
+    "meaning": "Every bad situation has some positive aspect",
+    "example": "Losing that job led to a better one — every cloud has a silver lining.",
+    "cefr": "B2",
+    "tip": "Even dark clouds have bright edges from the sun behind them"
+  },
+  "get cold feet": {
+    "meaning": "To become too nervous or afraid to do something",
+    "example": "He got cold feet before the wedding.",
+    "cefr": "B2",
+    "tip": "Fear makes your feet cold — you freeze and can't move forward"
+  },
+  "go the extra mile": {
+    "meaning": "To make more effort than is expected",
+    "example": "She always goes the extra mile for her clients.",
+    "cefr": "B2",
+    "tip": "Walking further than needed — doing more than the minimum"
+  },
+  "in the heat of the moment": {
+    "meaning": "Overwhelmed by what is happening at the time",
+    "example": "I said things I regret in the heat of the moment.",
+    "cefr": "B2",
+    "tip": "Emotions burning hot — you act on impulse"
+  },
+  "keep your chin up": {
+    "meaning": "To remain cheerful in a difficult situation",
+    "example": "Things will get better — keep your chin up.",
+    "cefr": "B2",
+    "tip": "Head held high, not drooping in defeat"
+  },
+  "leave no stone unturned": {
+    "meaning": "To do everything possible to find or achieve something",
+    "example": "The police left no stone unturned in their search.",
+    "cefr": "C1",
+    "tip": "Turning over every stone to look underneath — thorough search"
+  },
+  "make a long story short": {
+    "meaning": "To get to the point quickly",
+    "example": "To make a long story short, we missed the flight.",
+    "cefr": "B1",
+    "tip": "Cutting a long tale to its essential ending"
+  },
+  "nip it in the bud": {
+    "meaning": "To stop something at an early stage before it becomes worse",
+    "example": "We need to nip this problem in the bud.",
+    "cefr": "C1",
+    "tip": "Cutting a plant bud before it blooms — stopping growth early"
+  },
+  "on the same page": {
+    "meaning": "To have the same understanding or opinion",
+    "example": "Let's make sure we're all on the same page before we proceed.",
+    "cefr": "B2",
+    "tip": "Everyone reading the same page of a book — shared information"
+  },
+  "play it by ear": {
+    "meaning": "To decide what to do as things happen, without a plan",
+    "example": "Let's just play it by ear and see how the day goes.",
+    "cefr": "C1",
+    "tip": "Musicians playing without written music — improvising"
+  },
+  "read between the lines": {
+    "meaning": "To understand the hidden meaning behind something said or written",
+    "example": "If you read between the lines, she was actually asking for help.",
+    "cefr": "C1",
+    "tip": "The real message is hidden in the spaces, not the words themselves"
+  },
+  "ring a bell": {
+    "meaning": "To sound familiar",
+    "example": "That name rings a bell — have I met her before?",
+    "cefr": "B2",
+    "tip": "A bell ringing triggers a memory"
+  },
+  "the tip of the iceberg": {
+    "meaning": "Only a small part of a much larger issue",
+    "example": "These problems are just the tip of the iceberg.",
+    "cefr": "B2",
+    "tip": "Most of the iceberg is hidden underwater — the real problem is bigger"
+  },
+  "time flies": {
+    "meaning": "Time passes very quickly",
+    "example": "Time flies when you're having fun.",
+    "cefr": "B1",
+    "tip": "Time zooming past like a bird in flight"
+  },
+  "to each his own": {
+    "meaning": "Everyone has their own preferences",
+    "example": "I wouldn't eat that, but to each his own.",
+    "cefr": "B2",
+    "tip": "Each person has their own taste — no judgment"
+  },
+  "turn over a new leaf": {
+    "meaning": "To start behaving in a better way",
+    "example": "After the incident, he turned over a new leaf.",
+    "cefr": "C1",
+    "tip": "Turning to a blank page — fresh start"
+  },
+  "burning bridges": {
+    "meaning": "To destroy a relationship or connection permanently",
+    "example": "Don't burn bridges — you may need their help someday.",
+    "cefr": "C1",
+    "tip": "Burning the bridge behind you — no way to go back"
+  },
+  "call it a day": {
+    "meaning": "To stop work or activity",
+    "example": "We've done enough — let's call it a day.",
+    "cefr": "B2",
+    "tip": "Declaring the work day is over — time to stop"
+  },
+  "food for thought": {
+    "meaning": "Something to think about carefully",
+    "example": "Your idea about remote work is real food for thought.",
+    "cefr": "B2",
+    "tip": "Your mind 'eats' it — nourishment for thinking"
+  },
+  "get the ball rolling": {
+    "meaning": "To begin an activity or process",
+    "example": "Let's get the ball rolling on the new project.",
+    "cefr": "B2",
+    "tip": "A ball needs an initial push to start rolling"
+  },
+  "give the benefit of the doubt": {
+    "meaning": "To decide that someone is probably innocent or truthful",
+    "example": "I'll give her the benefit of the doubt this time.",
+    "cefr": "C1",
+    "tip": "When uncertain, choose to believe the better explanation"
+  },
+  "go down in flames": {
+    "meaning": "To fail spectacularly",
+    "example": "The product launch went down in flames.",
+    "cefr": "C1",
+    "tip": "A burning plane crashing — dramatic failure"
+  },
+  "hit rock bottom": {
+    "meaning": "To reach the lowest possible point",
+    "example": "After losing his job and home, he hit rock bottom.",
+    "cefr": "B2",
+    "tip": "The very bottom of a mine shaft — can't go any lower"
+  },
+  "in hot water": {
+    "meaning": "In trouble; in a difficult situation",
+    "example": "He's in hot water with his parents after failing the test.",
+    "cefr": "B2",
+    "tip": "Being in boiling water — an uncomfortable, dangerous place"
+  },
+  "keep an eye on": {
+    "meaning": "To watch carefully; to monitor",
+    "example": "Could you keep an eye on my bags while I'm away?",
+    "cefr": "B1",
+    "tip": "Your eye stays fixed on something — constant attention"
+  },
+  "know the ropes": {
+    "meaning": "To understand how something works; to be experienced",
+    "example": "She really knows the ropes around here.",
+    "cefr": "C1",
+    "tip": "Sailors who knew which ropes to pull — experienced crew"
+  },
+  "lose your touch": {
+    "meaning": "To lose an ability or skill you once had",
+    "example": "He used to be a great cook, but he's lost his touch.",
+    "cefr": "B2",
+    "tip": "Your skilled 'touch' has slipped away"
+  },
+  "make ends meet": {
+    "meaning": "To have just enough money to live on",
+    "example": "It's hard to make ends meet on a single income.",
+    "cefr": "B2",
+    "tip": "Stretching your budget so the two ends barely touch"
+  },
+  "not my cup of tea": {
+    "meaning": "Not something you enjoy or are interested in",
+    "example": "Horror movies are not my cup of tea.",
+    "cefr": "B2",
+    "tip": "Tea you wouldn't choose to drink — not your preference"
+  },
+  "off the top of my head": {
+    "meaning": "Without careful thought or investigation",
+    "example": "Off the top of my head, I'd say about twenty.",
+    "cefr": "B2",
+    "tip": "The first thing that pops out of your head"
+  },
+  "put all your eggs in one basket": {
+    "meaning": "To risk everything on a single venture",
+    "example": "Don't put all your eggs in one basket — diversify your investments.",
+    "cefr": "B2",
+    "tip": "If the basket drops, ALL eggs break"
+  },
+  "scratch the surface": {
+    "meaning": "To deal with only a small part of a subject",
+    "example": "We've only scratched the surface of this issue.",
+    "cefr": "C1",
+    "tip": "Only touching the outer layer — not digging deep"
+  },
+  "take a rain check": {
+    "meaning": "To decline now but accept for another time",
+    "example": "I can't come tonight — can I take a rain check?",
+    "cefr": "C1",
+    "tip": "A rain check lets you use a ticket another day if it rains"
+  },
+  "the elephant in the room": {
+    "meaning": "An obvious problem that everyone ignores",
+    "example": "Let's address the elephant in the room — we're over budget.",
+    "cefr": "C1",
+    "tip": "An elephant is impossible to ignore, yet everyone pretends not to see it"
+  },
+  "throw caution to the wind": {
+    "meaning": "To act recklessly; to take a big risk",
+    "example": "She threw caution to the wind and quit her job to travel.",
+    "cefr": "C1",
+    "tip": "Tossing your careful warnings into the wind — letting them blow away"
+  },
+  "under someone's thumb": {
+    "meaning": "Under someone's control or influence",
+    "example": "He's always been under his mother's thumb.",
+    "cefr": "C1",
+    "tip": "Pinned down by a thumb — unable to move freely"
+  },
+  "weather the storm": {
+    "meaning": "To survive a difficult period",
+    "example": "The company weathered the storm of the recession.",
+    "cefr": "C1",
+    "tip": "A ship enduring a storm — surviving through hardship"
+  },
+  "wrap up": {
+    "meaning": "To finish or conclude something",
+    "example": "Let's wrap up this meeting.",
+    "cefr": "B1",
+    "tip": "Tying up loose ends like wrapping a package"
+  },
+  "at the end of the day": {
+    "meaning": "Ultimately; when everything is considered",
+    "example": "At the end of the day, what matters is your happiness.",
+    "cefr": "B1",
+    "tip": "When the sun sets and you reflect on what really counts"
+  },
+  "give someone the cold shoulder": {
+    "meaning": "To intentionally ignore someone",
+    "example": "She gave him the cold shoulder after the argument.",
+    "cefr": "C1",
+    "tip": "Turning your cold shoulder toward someone — refusing warmth"
+  },
+  "in a nutshell": {
+    "meaning": "In summary; briefly",
+    "example": "In a nutshell, the project failed due to lack of funding.",
+    "cefr": "B2",
+    "tip": "Everything compressed into a tiny nutshell — the shortest version"
+  },
+  "open a can of worms": {
+    "meaning": "To create a complicated situation by doing something",
+    "example": "Asking about his ex opened a real can of worms.",
+    "cefr": "C1",
+    "tip": "Opening the can releases worms everywhere — one action causes many problems"
+  },
+  "over the moon": {
+    "meaning": "Extremely happy",
+    "example": "She was over the moon when she got the promotion.",
+    "cefr": "B2",
+    "tip": "So happy you jump over the moon"
+  },
+  "rub salt in the wound": {
+    "meaning": "To make a bad situation even worse",
+    "example": "Don't rub salt in the wound by reminding me.",
+    "cefr": "C1",
+    "tip": "Salt on an open wound — literally adding pain"
+  },
+  "the whole nine yards": {
+    "meaning": "Everything; the full extent",
+    "example": "She decorated the house — balloons, streamers, the whole nine yards.",
+    "cefr": "C1",
+    "tip": "All nine yards of fabric or ammunition — using every last bit"
+  },
+  "wild goose chase": {
+    "meaning": "A hopeless search or pursuit",
+    "example": "Looking for that file was a wild goose chase.",
+    "cefr": "C1",
+    "tip": "Chasing wild geese — they fly away and you never catch them"
+  },
+  "a penny for your thoughts": {
+    "meaning": "Used to ask what someone is thinking about",
+    "example": "You look thoughtful — a penny for your thoughts?",
+    "cefr": "C1",
+    "tip": "Offering to pay a penny to hear someone's private thoughts"
+  },
+  "add fuel to the fire": {
+    "meaning": "To make an already bad situation worse",
+    "example": "His comments only added fuel to the fire.",
+    "cefr": "B2",
+    "tip": "Throwing fuel on flames — making them burn hotter"
+  },
+  "break a leg": {
+    "meaning": "Good luck (especially before a performance)",
+    "example": "You've got this — break a leg!",
+    "cefr": "B2",
+    "tip": "Theater superstition: saying 'good luck' is bad luck, so you say the opposite"
+  },
+  "cross that bridge when you come to it": {
+    "meaning": "To deal with a problem when it actually happens",
+    "example": "We'll cross that bridge when we come to it.",
+    "cefr": "B2",
+    "tip": "Don't worry about the bridge until you actually reach it"
+  },
+  "easier said than done": {
+    "meaning": "Something is more difficult in practice than it sounds",
+    "example": "Losing weight is easier said than done.",
+    "cefr": "B1",
+    "tip": "Words are easy; actions are hard"
+  },
+  "let sleeping dogs lie": {
+    "meaning": "To avoid interfering with a situation that might cause trouble",
+    "example": "Don't bring up the past — let sleeping dogs lie.",
+    "cefr": "C1",
+    "tip": "Waking a sleeping dog might get you bitten — leave it alone"
+  },
+  "the best of both worlds": {
+    "meaning": "Having the advantages of two different things at once",
+    "example": "Working from home gives me the best of both worlds — comfort and career.",
+    "cefr": "B2",
+    "tip": "Getting the good parts of two choices simultaneously"
+  },
+  "you can't judge a book by its cover": {
+    "meaning": "You shouldn't form an opinion based on appearance alone",
+    "example": "He looks tough, but you can't judge a book by its cover.",
+    "cefr": "B1",
+    "tip": "The cover reveals nothing about the story inside"
+  }
+}
