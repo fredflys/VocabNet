@@ -76,6 +76,20 @@ function App() {
   }
 
   const handleBookSelect = async (bookInput, forceNebula = false) => {
+    // If the bookInput already has vocab/entities (it's a full book object), 
+    // we can skip the fetch and use it directly. This fixes the issue for 
+    // newly processed books.
+    if (bookInput && bookInput.vocab && bookInput.entities) {
+      setSelectedBook(bookInput)
+      if (forceNebula) {
+        setShowNebula(true)
+      } else {
+        setShowNebula(false)
+        setView('vocab')
+      }
+      return
+    }
+
     setIsLoading(true)
     try {
       // Handle both book objects and string IDs

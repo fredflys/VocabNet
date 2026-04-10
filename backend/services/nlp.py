@@ -41,6 +41,9 @@ _NATURAL_ENTITIES = {
 # Optimized to avoid greedy matching issues
 _UNIT_PATTERN = re.compile(r"^(?:[0-9]*\s*)?[MGkmunp]?([eE]V|Hz|J|W|V|A|K|m/s|kg|mol|cd)[.]?$|^[A-Z]{2,4}[.]?$")
 
+# Regex for structural markers we want to ignore (e.g. Chapter 1, Section A)
+_STRUCTURAL_IGNORE_RE = re.compile(r"^(chapter|section|part|volume|book|page|fig|figure|table)\s*(\d+|[ivx]+|[a-z])?$", re.I)
+
 _CHAPTER_MARKER_RE = re.compile(r"<CHAPTER (\d+)>")
 
 # ── Pipeline Logic ───────────────────────────────────────────────────────────
@@ -86,12 +89,13 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
             current_sent_entities = []
             token_to_entity = {}
 
-            # A. Process NER
+            # A. Process spaCy NER
             for ent in doc.ents:
                 if ent.start_char >= sent.start_char and ent.end_char <= sent.end_char:
                     if ent.label_ in _EXCLUDED_ENT_TYPES: continue
                     e_text = ent.text.strip()
-                    if len(e_text) < 2: continue
+                    # Skip structural markers and single-character junk
+                    if len(e_text) < 2 or _STRUCTURAL_IGNORE_RE.match(e_text): continue
                     e_key = e_text.lower()
                     
                     if e_key not in entity_map:
@@ -103,10 +107,10 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
                     current_sent_entities.append(e_key)
                     for token in ent: token_to_entity[token.i] = e_key
 
-            # B. Process Noun Chunks
+            # B. Process Noun Chunks (Potential Concepts)
             for chunk_np in sent.noun_chunks:
                 np_text = chunk_np.text.strip()
-                if len(np_text) < 3 or len(np_text.split()) > 3: continue
+                if len(np_text) < 3 or len(np_text.split()) > 3 or _STRUCTURAL_IGNORE_RE.match(np_text): continue
                 np_key = np_text.lower()
                 
                 if zipf_frequency(np_key, 'en') < 3.5:
@@ -122,7 +126,7 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
             # C. Fallback: Manual unit scanner
             for token in sent:
                 if token.i in token_to_entity: continue
-                if _UNIT_PATTERN.match(token.text):
+                if _UNIT_PATTERN.match(token.text) and not _STRUCTURAL_IGNORE_RE.match(token.text):
                     e_text = token.text
                     e_key = e_text.lower()
                     if e_key not in entity_map:
@@ -184,18 +188,34 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
         char_offset += len(chunk)
         if progress_callback: progress_callback(15 + int((i + 1) / total_chunks * 40))
 
-    # --- Stage 2: Label Harmonization ---
+    # --- Stage 2: Label Harmonization & Vocabulary Injection ---
+    # Inject high-value vocabulary as Concepts if they are sufficiently rare
+    for lemma, vdata in lemma_data.items():
+        if vdata["count"] >= 3:
+            freq = zipf_frequency(lemma, 'en')
+            if freq < 3.0: # Only rare/technical words
+                key = lemma.lower()
+                if key not in entity_map:
+                    entity_map[key] = {
+                        "text": lemma,
+                        "raw_label": "CONCEPT_INJECTED",
+                        "count": vdata["count"],
+                        "first_chapter": vdata["first_chapter"],
+                        "is_subject_of_human_verb": False
+                    }
+
     final_entities = []
     for key, data in entity_map.items():
         text = data["text"]
         is_natural = key in _NATURAL_ENTITIES
         is_unit = _UNIT_PATTERN.match(text)
         is_human_agent = data["is_subject_of_human_verb"]
+        occ_count = data.get("occurrence_count") or data.get("count", 1)
         
         # High value = should not be filtered out even if count is 1
         is_high_value = data["raw_label"] in ("PERSON", "GPE", "LOC") or is_natural or is_unit or is_human_agent
         
-        if data["count"] < 2 and not is_high_value:
+        if occ_count < 2 and not is_high_value:
             continue
             
         best_label = "Concept"
@@ -224,6 +244,7 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
 
         rels = sorted(co_occurrence[key].items(), key=lambda x: x[1], reverse=True)[:15]
         data["label"] = best_label
+        data["occurrence_count"] = occ_count # Set standardized field for DB
         data["relationships"] = [
             {
                 "target": entity_map[r[0]]["text"], 
@@ -231,8 +252,11 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
                 "scenes": shared_sentences[key][r[0]]
             } for r in rels if r[0] in entity_map
         ]
-        del data["raw_label"]
-        del data["is_subject_of_human_verb"]
+        
+        # Clean up internal metadata
+        for k in ["raw_label", "is_subject_of_human_verb", "count"]:
+            if k in data: del data[k]
+        
         final_entities.append(data)
 
     return lemma_data, final_entities, all_docs

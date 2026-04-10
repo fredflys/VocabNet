@@ -5,7 +5,7 @@ import DensitySlider from './common/DensitySlider'
 
 export default function IntelligenceNebula({ entities, bookTitle, onClose, totalChapters = 1 }) {
   const fgRef = useRef()
-  const [density, setDensity] = useState(30)
+  const [density, setDensity] = useState(50)
   const [activeFilter, setActiveFilter] = useState('All')
   const [selectedNode, setSelectedNode] = useState(null)
   const [selectedLink, setSelectedLink] = useState(null)
@@ -31,27 +31,32 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
 
   const graphData = useMemo(() => {
     // 1. Filter by current evolution chapter
-    let filtered = entities.filter(e => e.first_chapter <= currentChapter)
+    let filtered = entities.filter(e => {
+      const first = e.first_chapter || 0
+      return first <= currentChapter || currentChapter === 0
+    })
     
-    // 2. Score by prominence
-    let scored = filtered.map(e => {
+    // 2. Standardize data structure
+    let standardized = filtered.map(e => {
       const count = e.occurrence_count || e.count || 1
       const relationshipCount = e.relationships?.length || 0
-      const prominence = (count * 1.5) + (relationshipCount * 5.0)
+      const typeBoost = e.label === 'Character' ? 1.2 : 1.0
+      const prominence = ((count * 1.5) + (relationshipCount * 5.0)) * typeBoost
       return { ...e, prominence, safeCount: count }
     })
 
+    // 3. Filter by type pill BEFORE slicing density
+    // This ensures we show the top characters, not just characters in the top global list
     if (activeFilter !== 'All') {
-      scored = scored.filter(e => e.label === activeFilter)
+      standardized = standardized.filter(e => e.label.toLowerCase() === activeFilter.toLowerCase())
     }
 
-    scored.sort((a, b) => b.prominence - a.prominence)
-    const visibleEntities = scored.slice(0, density)
+    // 4. Sort and slice based on prominence
+    standardized.sort((a, b) => b.prominence - a.prominence)
+    const visibleEntities = standardized.slice(0, density)
     const visibleIds = new Set(visibleEntities.map(e => e.text))
 
     // 5. Transform to D3 Nodes
-    // Note: We don't try to access fgRef here anymore to avoid render-phase errors.
-    // react-force-graph will reconcile nodes by 'id' automatically.
     const nodes = visibleEntities.map(e => ({
       id: e.text,
       label: e.text,
@@ -111,6 +116,16 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
     // Pin node position after dragging
     node.fx = node.x
     node.fy = node.y
+  }, [])
+
+  const handleResetLayout = useCallback(() => {
+    if (!fgRef.current) return
+    const { nodes } = fgRef.current.getGraphData()
+    nodes.forEach(node => {
+      node.fx = null
+      node.fy = null
+    })
+    fgRef.current.d3ReheatSimulation()
   }, [])
 
   return (
@@ -210,6 +225,14 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
                 <button key={type} onClick={() => { setActiveFilter(type); setDensity(30); }} style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', border: 'none', background: activeFilter === type ? 'var(--primary)' : 'transparent', color: activeFilter === type ? 'white' : theme.mutedText, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>{type === 'All' ? 'GALAXY' : type.toUpperCase()}</button>
               ))}
             </div>
+            <div style={{ width: '1px', height: '30px', background: theme.borderColor }}></div>
+            <button 
+              onClick={handleResetLayout}
+              style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1rem', borderRadius: '10px' }}
+              title="Unpin all nodes and reset physics"
+            >
+              🔄 RESET
+            </button>
             <div style={{ width: '1px', height: '30px', background: theme.borderColor }}></div>
             <DensitySlider value={density} onChange={setDensity} />
           </div>

@@ -152,7 +152,8 @@ async def run_book_pipeline(
         }
 
         try:
-            await save_book(filename, result, session=session)
+            saved_id = await save_book(filename, result, session=session)
+            result["id"] = saved_id
         except Exception as save_err:
             logger.warning(f"Library save failed: {save_err}")
 

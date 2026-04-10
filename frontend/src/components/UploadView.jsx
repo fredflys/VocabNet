@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import GutenbergSearch from './GutenbergSearch'
-import { motion } from 'framer-motion'
+import { motion, useAnimation } from 'framer-motion'
 
 const CEFR_LEVELS = ['A2', 'B1', 'B2', 'C1']
 const ACCEPTED_TYPES = '.txt,.epub'
@@ -13,6 +13,7 @@ export default function UploadView({ onProcessing, settings, onBack }) {
   const [error, setError] = useState('')
   const [tab, setTab] = useState('file')
   const inputRef = useRef()
+  const controls = useAnimation()
 
   function handleFile(f) {
     if (!f) return
@@ -29,6 +30,11 @@ export default function UploadView({ onProcessing, settings, onBack }) {
   async function handleSubmit() {
     if (!file) {
       setError('Please upload a book first to begin the analysis.')
+      // Trigger Vibration Animation
+      controls.start({
+        x: [0, -10, 10, -10, 10, 0],
+        transition: { duration: 0.4 }
+      })
       return
     }
     setIsUploading(true)
@@ -93,16 +99,26 @@ export default function UploadView({ onProcessing, settings, onBack }) {
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>EPUB or TXT, max 5MB</div>
             </div>
 
-            {error && <div className="error-banner" style={{ marginTop: '1rem' }}>{error}</div>}
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="error-banner" 
+                style={{ marginTop: '1.5rem', textAlign: 'center', fontWeight: 600 }}
+              >
+                ⚠️ {error}
+              </motion.div>
+            )}
 
-            <button 
+            <motion.button 
+              animate={controls}
               className="btn--primary" 
               onClick={handleSubmit} 
-              disabled={!file || isUploading}
-              style={{ width: '100%', marginTop: '2rem', padding: '1.25rem', fontSize: '1.1rem' }}
+              disabled={isUploading}
+              style={{ width: '100%', marginTop: '2.5rem', padding: '1.25rem', fontSize: '1.1rem', fontWeight: 800 }}
             >
               {isUploading ? 'CATALOGING...' : 'BEGIN ANALYSIS'}
-            </button>
+            </motion.button>
           </div>
         ) : (
           <GutenbergSearch onStart={onProcessing} settings={{ ...settings, level }} />

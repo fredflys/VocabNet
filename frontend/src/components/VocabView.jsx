@@ -35,6 +35,7 @@ function EntityCard({ entity }) {
     'Concept': { bg: '#f5f3ff', text: '#5b21b6', border: '#8b5cf6' }
   }
   const color = labelColors[entity.label] || labelColors['Concept']
+  const count = entity.occurrence_count || entity.count || 1
 
   return (
     <motion.div 
@@ -46,8 +47,8 @@ function EntityCard({ entity }) {
         borderRadius: 'var(--radius)', 
         border: `1px solid var(--border)`,
         boxShadow: 'var(--shadow-sm)',
-        display: 'flex',
-        flexDirection: 'column',
+        display: 'flex', 
+        flexDirection: 'column', 
         gap: '1rem'
       }}
     >
@@ -59,7 +60,7 @@ function EntityCard({ entity }) {
       </div>
       
       <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-        First mentioned in <strong>Chapter {entity.first_chapter}</strong> · Appears <strong>{entity.count} times</strong>
+        First mentioned in <strong>Chapter {entity.first_chapter || 0}</strong> · Appears <strong>{count} times</strong>
       </div>
 
       {entity.relationships && entity.relationships.length > 0 && (
