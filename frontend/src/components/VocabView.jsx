@@ -5,6 +5,7 @@ import WordDetailModal from './WordDetailModal'
 import { exportData } from '../utils/export'
 import Pagination from './common/Pagination'
 import SidebarTOC from './SidebarTOC'
+import TOCTrigger from './TOCTrigger'
 
 const API = 'http://localhost:8000'
 
@@ -200,6 +201,7 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
   const [showExportOptions, setShowExportOptions] = useState(false)
   const [selectedChapter, setSelectedChapter] = useState(null)
   const [localVocab, setLocalVocab] = useState(book.vocab || [])
+  const [isTOCOpen, setIsTOCOpen] = useState(false)
   
   const [sortBy, setSortBy] = useState('repeated') 
   const [sortOrder, setSortOrder] = useState('desc')
@@ -301,15 +303,23 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
   }, [page, tab])
 
   return (
-    <div className="vocab-view-container" style={{ display: 'flex', gap: '3rem', maxWidth: '1400px', margin: '0 auto', padding: '0 2rem 8rem' }}>
+    <div className="vocab-view-container" style={{ position: 'relative', maxWidth: '1100px', margin: '0 auto', paddingBottom: '8rem' }}>
+      <TOCTrigger 
+        onClick={() => setIsTOCOpen(true)} 
+        selectedChapter={selectedChapter}
+        isMaster={book.id === 'master'}
+      />
+
       <SidebarTOC 
         chapters={book.chapters} 
         selectedChapter={selectedChapter} 
         onSelectChapter={(num) => { setSelectedChapter(num); setPage(1); }}
         isMaster={book.id === 'master'}
+        isOpen={isTOCOpen}
+        onClose={() => setIsTOCOpen(false)}
       />
 
-      <div className="vocab-content" style={{ flex: 1, minWidth: 0 }}>
+      <div className="vocab-content" style={{ width: '100%' }}>
         <div style={{ marginBottom: '5rem' }}>
           <button className="btn--secondary" onClick={onBack} style={{ marginBottom: '2.5rem', borderRadius: '12px', padding: '0.6rem 1.2rem' }}>⬅ Library Dashboard</button>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
