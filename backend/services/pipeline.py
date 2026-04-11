@@ -162,3 +162,14 @@ async def run_book_pipeline(
     except Exception as e:
         logger.error(f"Pipeline error: {traceback.format_exc()}")
         update_job(job_id, status="error", error=str(e))
+
+def verify_pipeline_health() -> bool:
+    """Pre-flight check to ensure the NLP engine and dependencies are fully loaded."""
+    try:
+        from services.nlp import get_nlp
+        nlp = get_nlp()
+        doc = nlp("This is a diagnostic smoke test to verify pipeline health.")
+        return len(doc) > 0
+    except Exception as e:
+        logger.error(f"Pipeline health check failed: {e}")
+        return False

@@ -30,10 +30,15 @@ async def lifespan(app: FastAPI):
     print("Database ready.")
 
     # 2. Pre-load NLP Models
-    print("Pre-loading NLP models...")
-    from services.nlp import get_nlp
-    await asyncio.to_thread(get_nlp)
-    print("NLP models active and cached.")
+    print("Pre-loading and verifying NLP pipeline...")
+    from services.pipeline import verify_pipeline_health
+    is_healthy = await asyncio.to_thread(verify_pipeline_health)
+    if not is_healthy:
+        print("❌ FATAL: NLP pipeline failed to initialize. Check models and dependencies.")
+        # We don't exit hard here to let FastAPI finish starting so we can see the error,
+        # but in a real prod env we might sys.exit(1). Let's raise an exception.
+        raise RuntimeError("NLP Pipeline initialization failed.")
+    print("NLP models active and verified.")
     
     yield
     print("Shutting down API...")
