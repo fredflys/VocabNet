@@ -11,6 +11,7 @@ class BookBase(BaseModel):
     unique_lemmas: int
     difficult_count: int = 0
     idiom_count: int
+    total_chapters: int = 0
     added_date: str
 
 class VocabEntry(BaseModel):
