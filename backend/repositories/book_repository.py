@@ -51,6 +51,11 @@ class BookRepository(BaseRepository):
         user_res = await self.session.execute(user_stmt)
         user_status_map = {r[0]: r[1] for r in user_res.all()}
 
+        # Batch fetch dictionary cache for all lemmas
+        dict_stmt = select(DictCache).where(DictCache.lemma.in_([v.lemma.lower().strip() for v in book.vocab]))
+        dict_res = await self.session.execute(dict_stmt)
+        dict_cache_map = {r.lemma: r for r in dict_res.scalars().all()}
+
         res = book.model_dump()
         res["chapters"] = [
             {
@@ -70,6 +75,16 @@ class BookRepository(BaseRepository):
             d["global_count"] = global_counts.get(v.lemma, v.occurrence_count)
             d["examples"] = contexts_map.get(v.lemma.lower(), [])
             d["example"] = d["examples"][0] if d["examples"] else ""
+            
+            # Enrich with cached dictionary data
+            cached = dict_cache_map.get(v.lemma.lower().strip())
+            if cached:
+                d["inflections"] = json.loads(cached.inflections) if cached.inflections else []
+                if not d["translation"] and cached.definition:
+                    d["translation"] = cached.definition
+            else:
+                d["inflections"] = []
+
             try:
                 d["chapters"] = json.loads(v.chapter_list) if v.chapter_list else []
             except:
@@ -223,8 +238,13 @@ class BookRepository(BaseRepository):
             
         return items, total_count
 
-    async def get_contexts_for_word(self, lemma: str) -> List[dict]:
-        stmt = select(BookContext, Book.title).join(Book).where(BookContext.lemma == lemma.lower()).limit(200)
+    async def get_contexts_for_word(self, lemma: str, exclude_book_id: Optional[str] = None) -> List[dict]:
+        stmt = select(BookContext, Book.title).join(Book).where(BookContext.lemma == lemma.lower())
+        
+        if exclude_book_id:
+            stmt = stmt.where(BookContext.book_id != exclude_book_id)
+            
+        stmt = stmt.limit(200)
         result = await self.session.execute(stmt)
         results_map = {}
         for row in result.all():

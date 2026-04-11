@@ -121,20 +121,47 @@ _EMPTY_RESULT = {
     "pos": "", "source": "", "all_meanings": [],
 }
 
+def get_inflections(word: str) -> list[str]:
+    """Use spaCy to generate common inflections for a lemma."""
+    from services.nlp import get_nlp
+    nlp = get_nlp()
+    doc = nlp(word)
+    if not doc: return [word]
+    
+    token = doc[0]
+    # We use the lexeme from the spaCy vocab to find common forms
+    # This is a lightweight heuristic approach
+    forms = {word.lower()}
+    
+    # Check common English suffixes for the base word
+    # (Since sm model doesn't have a full generator, we use a heuristic)
+    if token.pos_ == "VERB":
+        forms.update({word + 's', word + 'ed', word + 'ing'})
+    elif token.pos_ == "NOUN":
+        forms.update({word + 's', word + 'es'})
+        
+    return sorted(list(forms))
+
 async def get_definition(word: str, session: AsyncSession) -> dict:
     repo = DictRepository(session)
     cached = await repo.get_by_lemma(word)
     if cached is not None:
         return cached
 
+    result = None
     for provider in PROVIDERS:
         result = await provider.resolve(word)
         if result and result.get("definition"):
-            await repo.upsert(word, result)
-            return result
+            break
 
-    await repo.upsert(word, _EMPTY_RESULT)
-    return {**_EMPTY_RESULT}
+    if not result:
+        result = {**_EMPTY_RESULT}
+    
+    # Add inflections for the highlighter
+    result["inflections"] = get_inflections(word)
+    
+    await repo.upsert(word, result)
+    return result
 
 async def fetch_definitions_batch(words: list[str], session: AsyncSession) -> dict[str, dict]:
     results = {}

@@ -124,8 +124,12 @@ async def stream_job_status(request: Request, job_id: str):
 
 
 @router.get("/contexts/{word}")
-async def get_cross_book_contexts(word: str, session: AsyncSession = Depends(get_session)):
+async def get_cross_book_contexts(
+    word: str, 
+    exclude_book_id: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session)
+):
     """Scan all library books and return up to 10 contextual sentences per book for the given word."""
     repo = BookRepository(session)
-    results = await repo.get_contexts_for_word(word)
+    results = await repo.get_contexts_for_word(word, exclude_book_id=exclude_book_id)
     return {"word": word, "results": results}

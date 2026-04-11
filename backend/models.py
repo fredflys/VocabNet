@@ -93,6 +93,7 @@ class DictCache(SQLModel, table=True):
     pos: str = Field(default="")
     source: str = Field(default="")
     all_meanings: str = Field(default="[]")
+    inflections: str = Field(default="[]") # JSON list of strings
     updated_at: str
 
 # ── Global User Data Models ──────────────────────────────────────────────────

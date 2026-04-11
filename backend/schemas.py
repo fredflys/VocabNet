@@ -29,6 +29,7 @@ class VocabEntry(BaseModel):
     examples: List[str] = []
     global_count: int = 0
     is_idiom: bool = False
+    inflections: List[str] = []
     
     class Config:
         populate_by_name = True

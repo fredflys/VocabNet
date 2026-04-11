@@ -12,6 +12,7 @@ class DictRepository(BaseRepository):
         if row:
             d = row.model_dump()
             d["all_meanings"] = json.loads(row.all_meanings) if row.all_meanings else []
+            d["inflections"] = json.loads(row.inflections) if row.inflections else []
             return d
         return None
 
@@ -24,6 +25,7 @@ class DictRepository(BaseRepository):
             pos=data.get('pos', ''),
             source=data.get('source', ''),
             all_meanings=json.dumps(data.get('all_meanings', [])),
+            inflections=json.dumps(data.get('inflections', [])),
             updated_at=datetime.now().isoformat()
         )
         await self.session.merge(cache_entry)
