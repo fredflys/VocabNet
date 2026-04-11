@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile, Request, Depends
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile, Request, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
