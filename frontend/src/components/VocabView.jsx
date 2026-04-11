@@ -410,10 +410,15 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               {currentItems.map(entry => (
-                <WordCard key={entry.lemma} entry={entry} isKnown={sm2Data[entry.lemma]?.status === 'mastered'} onToggle={handleToggleKnown} onDetail={setSelectedWord} />
+                <WordCard 
+                  key={entry.lemma} 
+                  entry={entry} 
+                  isKnown={sm2Data[entry.lemma]?.status === 'mastered'} 
+                  onToggle={handleToggleKnown} 
+                  onDetail={(e) => setSelectedWord({ ...e, book_id: book.id })} 
+                />
               ))}
-            </div>
-          </>
+            </div>          </>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <motion.div 

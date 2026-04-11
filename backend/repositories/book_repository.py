@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 from sqlalchemy import select, delete, func, and_
 from sqlalchemy.orm import selectinload
-from models import Book, BookChapter, BookVocab, BookContext, UserVocab, BookEntity, BookVocabChapterLink
+from models import Book, BookChapter, BookVocab, BookContext, UserVocab, BookEntity, BookVocabChapterLink, DictCache
 from repositories.base import BaseRepository
 from datetime import datetime
 import uuid

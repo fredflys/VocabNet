@@ -95,6 +95,7 @@ class UserRepository(BaseRepository):
         for row in result.all():
             items.append({
                 "lemma": row.lemma,
+                "book_id": "master",
                 "status": row.status or "new",
                 "reps": row.reps or 0,
                 "definition": row.definition or "",

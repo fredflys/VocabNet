@@ -55,7 +55,9 @@ export default function WordDetailModal({ entry, onClose, onSpeak, onSelectBook 
       
       try {
         // Task 1 Refinement: Exclude current book on the server side
-        const excludeParam = isMasterView ? '' : `?exclude_book_id=${entry.book_id}`
+        // Safety: ensure book_id is valid string and not 'undefined'
+        const bId = (entry && entry.book_id && entry.book_id !== 'undefined') ? entry.book_id : null
+        const excludeParam = (bId && !isMasterView) ? `?exclude_book_id=${bId}` : ''
         
         const [ctxResp, dictResp] = await Promise.all([
           fetch(`${API}/api/contexts/${encodeURIComponent(entry.lemma)}${excludeParam}`),

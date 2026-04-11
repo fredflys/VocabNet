@@ -16,6 +16,7 @@ class BookBase(BaseModel):
 
 class VocabEntry(BaseModel):
     lemma: str
+    book_id: Optional[str] = None
     pos: str
     occurrence_count: int = Field(alias="count")
     cefr: str
