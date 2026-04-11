@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
-from sqlalchemy import select, delete, func
+from sqlalchemy import select, delete, func, and_
 from sqlalchemy.orm import selectinload
-from models import Book, BookChapter, BookVocab, BookContext, UserVocab, BookEntity
+from models import Book, BookChapter, BookVocab, BookContext, UserVocab, BookEntity, BookVocabChapterLink
 from repositories.base import BaseRepository
 from datetime import datetime
 import uuid
@@ -32,7 +32,6 @@ class BookRepository(BaseRepository):
             if len(contexts_map[l_key]) < 10:
                 contexts_map[l_key].append(c.example_sentence)
 
-        lemmas = [v.lemma for v in book.vocab]
         count_stmt = select(
             BookVocab.lemma, 
             func.sum(BookVocab.occurrence_count).label("total")
@@ -53,7 +52,15 @@ class BookRepository(BaseRepository):
         user_status_map = {r[0]: r[1] for r in user_res.all()}
 
         res = book.model_dump()
-        res["chapters"] = [{"number": c.chapter_number, "word_count": c.word_count} for c in book.chapters]
+        res["chapters"] = [
+            {
+                "number": c.chapter_number, 
+                "title": c.title,
+                "word_count": c.word_count,
+                "start_offset": c.start_offset,
+                "end_offset": c.end_offset
+            } for c in sorted(book.chapters, key=lambda x: x.chapter_number)
+        ]
         
         enriched_vocab = []
         for v in book.vocab:
@@ -75,6 +82,7 @@ class BookRepository(BaseRepository):
         res["entities"] = []
         for e in book.entities:
             ed = e.model_dump()
+            ed["count"] = e.occurrence_count
             try:
                 ed["relationships"] = json.loads(e.relationships) if e.relationships else []
             except:
@@ -112,19 +120,44 @@ class BookRepository(BaseRepository):
         await self.session.execute(delete(BookContext).where(BookContext.book_id == book_id))
         await self.session.execute(delete(BookEntity).where(BookEntity.book_id == book_id))
 
+        # 1. Save Chapters & Map Numbers to IDs
+        chapter_map = {}
         for ch in result_data.get('chapters', []):
-            self.session.add(BookChapter(book_id=book_id, chapter_number=ch.get('number', 0), word_count=ch.get('word_count', 0)))
+            db_ch = BookChapter(
+                book_id=book_id, 
+                chapter_number=ch.get('number', 0),
+                title=ch.get('title', f"Chapter {ch.get('number', 0)}"),
+                word_count=ch.get('word_count', 0),
+                start_offset=ch.get('start_offset', 0),
+                end_offset=ch.get('end_offset', 0)
+            )
+            self.session.add(db_ch)
+            chapter_map[db_ch.chapter_number] = db_ch
 
+        await self.session.flush() # Generate IDs
+
+        # 2. Save Vocab & Link to Chapters
         for v in result_data.get('vocab', []):
             lemma = v.get('lemma', '')
-            self.session.add(BookVocab(
+            db_v = BookVocab(
                 book_id=book_id, lemma=lemma, pos=v.get('pos', ''), occurrence_count=v.get('count', 1),
                 first_chapter=v.get('first_chapter', 0), chapter_list=json.dumps(v.get('chapters', [])),
                 is_idiom=bool(v.get('is_idiom', False)), idiom_type=v.get('idiom_type', ''),
                 simple_def=v.get('simple_def', ''), memory_tip=v.get('memory_tip', ''),
                 llm_example=v.get('llm_example', ''), translation=v.get('translation', ''),
                 has_llm=bool(v.get('has_llm', False)), status=v.get('status', 'learning'), cefr=v.get('cefr', '?')
-            ))
+            )
+            self.session.add(db_v)
+            await self.session.flush() # Get Vocab ID
+
+            # Association table links
+            ch_nums = v.get('chapters', [])
+            for ch_num in ch_nums:
+                if ch_num in chapter_map:
+                    self.session.add(BookVocabChapterLink(
+                        vocab_id=db_v.id,
+                        chapter_id=chapter_map[ch_num].id
+                    ))
             
             examples = v.get('examples', [])
             if not examples and v.get('example'): examples = [v.get('example')]
@@ -132,13 +165,13 @@ class BookRepository(BaseRepository):
                 if ex:
                     self.session.add(BookContext(book_id=book_id, lemma=lemma.lower(), example_sentence=ex))
         
-        # Save Entities
+        # 3. Save Entities
         for e in result_data.get('entities', []):
             self.session.add(BookEntity(
                 book_id=book_id,
                 text=e.get("text", ""),
                 label=e.get("label", "Concept"),
-                occurrence_count=e.get("count", 1),
+                occurrence_count=e.get("occurrence_count", e.get("count", 1)),
                 first_chapter=e.get("first_chapter", 0),
                 relationships=json.dumps(e.get("relationships", []))
             ))
@@ -146,8 +179,15 @@ class BookRepository(BaseRepository):
         await self.session.commit()
         return book_id
 
-    async def get_vocab_paginated(self, book_id: str, page: int, page_size: int, search: str = "", cefr: str = "", type: str = "") -> Tuple[List[dict], int]:
+    async def get_vocab_paginated(self, book_id: str, page: int, page_size: int, search: str = "", cefr: str = "", type: str = "", chapter_number: Optional[int] = None) -> Tuple[List[dict], int]:
         stmt = select(BookVocab).where(BookVocab.book_id == book_id)
+        
+        if chapter_number is not None:
+            # High-performance join using association table
+            stmt = stmt.join(BookVocabChapterLink, BookVocab.id == BookVocabChapterLink.vocab_id)\
+                       .join(BookChapter, BookVocabChapterLink.chapter_id == BookChapter.id)\
+                       .where(BookChapter.chapter_number == chapter_number)
+
         if search:
             stmt = stmt.where((BookVocab.lemma.ilike(f"%{search}%")) | (BookVocab.translation.ilike(f"%{search}%")))
         if cefr:

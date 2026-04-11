@@ -198,6 +198,7 @@ function App() {
               entities={selectedBook.entities || []} 
               bookTitle={selectedBook.title}
               totalChapters={selectedBook.total_chapters}
+              initialChapter={selectedBook.initialChapter}
               onClose={() => setShowNebula(false)}
             />
           )}

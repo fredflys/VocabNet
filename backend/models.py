@@ -23,12 +23,20 @@ class Book(SQLModel, table=True):
     contexts: List["BookContext"] = Relationship(back_populates="book", cascade_delete=True)
     entities: List["BookEntity"] = Relationship(back_populates="book", cascade_delete=True)
 
+class BookVocabChapterLink(SQLModel, table=True):
+    __tablename__ = "book_vocab_chapter_links"
+    vocab_id: int = Field(foreign_key="book_vocab.id", primary_key=True, ondelete="CASCADE")
+    chapter_id: int = Field(foreign_key="book_chapters.id", primary_key=True, ondelete="CASCADE")
+
 class BookChapter(SQLModel, table=True):
     __tablename__ = "book_chapters"
     id: Optional[int] = Field(default=None, primary_key=True)
     book_id: str = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
     chapter_number: int
+    title: str = Field(default="Untitled Chapter")
     word_count: int
+    start_offset: int = Field(default=0)
+    end_offset: int = Field(default=0)
 
     book: Optional[Book] = Relationship(back_populates="chapters")
 

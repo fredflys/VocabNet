@@ -1,52 +1,33 @@
 """
 Text extraction and pre-processing for .txt and .epub files.
-Phase 4+: Smart chapter detection with graceful fallback.
+Unified Chapterization Engine v4.
 
-EPUB: Uses existing ITEM_DOCUMENT structure with heading-based naming.
-TXT:  Multi-pattern regex for chapter headings; falls back to no chapters
-      if fewer than 2 are detected (avoids false positives).
+Features:
+- EPUB: Semantic header extraction (h1/h2) for chapter titles.
+- TXT: Structural Entropy validation and Lookahead Titling.
+- Standardized Marker: <CHAPTER num|title>
 """
 import re
-
+import io
+from typing import List, Tuple, Optional
 
 # ── Project Gutenberg boilerplate markers ──────────────────────────────────
-_GUTENBERG_START_RE = re.compile(
-    r"\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG",
-    re.IGNORECASE,
-)
-_GUTENBERG_END_RE = re.compile(
-    r"\*\*\*\s*END OF (THE|THIS) PROJECT GUTENBERG",
-    re.IGNORECASE,
-)
+_GUTENBERG_START_RE = re.compile(r"\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG", re.I)
+_GUTENBERG_END_RE = re.compile(r"\*\*\*\s*END OF (THE|THIS) PROJECT GUTENBERG", re.I)
 
 # ── Chapter heading detection (TXT) ───────────────────────────────────────
-# Matches lines like:
-#   CHAPTER 1 / Chapter I / PART IV / Part Two / Chapter One
-#   The line must be ONLY the heading (possibly with a title after), not mid-sentence.
-# We require the heading to appear on its own line, possibly preceded/followed by blank lines.
 _CHAPTER_RE = re.compile(
     r"^[ \t]*(chapter|part|book|section|prologue|epilogue|preface|introduction|conclusion)"
-    r"(?:[ \t]+(?:[IVXLCDM]+|[ivxlcdm]+|\d+|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|"
-    r"[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en|[Ee]leven|[Tt]welve|[Ff]irst|[Ss]econd|"
-    r"[Tt]hird|[Ff]ourth|[Ff]ifth|[Ss]ixth|[Ss]eventh|[Ee]ighth|[Nn]inth|[Tt]enth))?[ \t]*"
-    r"(?:[:\-–—][ \t]*.*)?$",
-    re.MULTILINE | re.IGNORECASE,
+    r"(?:[ \t]+(?:[IVXLCDM]+|[ivxlcdm]+|\d+|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en))?[ \t]*"
+    r"(?:[:\-–—][ \t]*)?$",
+    re.M | re.I
 )
 
-# Minimum chapters before we consider chapterisation valid
-_MIN_CHAPTERS = 2
-
-
 def extract_text(raw: str) -> str:
-    """
-    Given raw .txt content, return clean prose text (optionally with chapter markers).
-    - Strips Project Gutenberg header/footer if present
-    - Attempts chapter detection; inserts <CHAPTER N> markers if ≥2 chapters found
-    - Falls back to plain text (no markers) when detection fails
-    """
+    """Clean prose text and inject standardized chapter markers."""
     text = raw
 
-    # Strip Project Gutenberg boilerplate
+    # 1. Strip Boilerplate
     start_match = _GUTENBERG_START_RE.search(text)
     if start_match:
         after_marker = text[start_match.end():]
@@ -55,141 +36,142 @@ def extract_text(raw: str) -> str:
 
     end_match = _GUTENBERG_END_RE.search(text)
     if end_match:
-        text = text[: end_match.start()]
+        text = text[:end_match.start()]
 
-    # Collapse multiple blank lines
+    # 2. Basic Cleaning
     text = re.sub(r"\n{3,}", "\n\n", text)
-
-    # Remove standalone page numbers
-    text = re.sub(r"^\s*\d+\s*$", "", text, flags=re.MULTILINE)
-
+    text = re.sub(r"^\s*\d+\s*$", "", text, flags=re.M)
     text = text.strip()
 
-    # Try chapter detection
-    text = _inject_chapter_markers(text)
+    # 3. Heuristic Chapterization
+    return _inject_txt_markers(text)
 
-    return text
+def _inject_txt_markers(text: str) -> str:
+    """Inject <CHAPTER num|title> markers using Structural Entropy rules."""
+    lines = text.split("\n")
+    candidates = []
+    
+    for i, line in enumerate(lines):
+        clean_line = line.strip()
+        if not clean_line or len(clean_line) > 60: continue
+        
+        if _CHAPTER_RE.match(clean_line):
+            # Structural Check: Must be surrounded by empty lines (approx)
+            prev_empty = i == 0 or not lines[i-1].strip()
+            next_empty = i == len(lines)-1 or not lines[i+1].strip()
+            
+            if prev_empty and next_empty:
+                # Lookahead for title: Check the next non-empty line
+                title = clean_line
+                next_idx = i + 1
+                while next_idx < len(lines) and not lines[next_idx].strip():
+                    next_idx += 1
+                
+                if next_idx < len(lines):
+                    potential_title = lines[next_idx].strip()
+                    # If it looks like a title (short, no punctuation at end)
+                    if 0 < len(potential_title) < 50 and potential_title[-1] not in ".?!\"":
+                        title = f"{clean_line}: {potential_title}"
+                
+                candidates.append({"line_idx": i, "title": title})
 
+    # Structural Density Validation: 
+    # If we find > 1 chapter per 500 words, it's likely noise (e.g. TOC or references)
+    word_count = len(text.split())
+    max_allowed = max(2, word_count // 500)
+    
+    if len(candidates) < 2 or len(candidates) > max_allowed:
+        # Fallback: Sematic Chunking (2500 words)
+        return _chunk_text(text)
 
-def _inject_chapter_markers(text: str) -> str:
-    """
-    Replace chapter headings with <CHAPTER N> markers.
-    Returns text unchanged if fewer than _MIN_CHAPTERS detected
-    (prevents false positives on books with inline "Chapter" references).
-    """
-    chapter_counter = [0]
-    candidate_positions = []
+    # Replace lines with markers
+    new_lines = list(lines)
+    for idx, cand in enumerate(candidates):
+        new_lines[cand["line_idx"]] = f"<CHAPTER {idx+1}|{cand['title']}>"
+    
+    return "\n".join(new_lines)
 
-    # First pass: collect all matches
-    for m in _CHAPTER_RE.finditer(text):
-        # Require the match to be on a mostly-blank line:
-        # The full line should be short (≤ 100 chars) to avoid matching
-        # sentences that happen to start with "Chapter" mid-paragraph.
-        full_line = m.group(0).strip()
-        if len(full_line) > 100:
-            continue
-        candidate_positions.append(m)
+def _chunk_text(text: str) -> str:
+    """Split text into 2500-word logical chunks if no chapters detected."""
+    words = text.split()
+    if len(words) < 3000: return text # Too small to chunk
+    
+    CHUNK_SIZE = 2500
+    chunks = []
+    for i in range(0, len(words), CHUNK_SIZE):
+        chunk_num = (i // CHUNK_SIZE) + 1
+        marker = f"<CHAPTER {chunk_num}|Section {chunk_num}>"
+        chunks.append(marker + "\n" + " ".join(words[i : i + CHUNK_SIZE]))
+    
+    return "\n\n".join(chunks)
 
-    if len(candidate_positions) < _MIN_CHAPTERS:
-        # Not enough chapters — return text unchanged (no chapter markers)
-        return text
-
-    # Second pass: replace from end to start so positions remain valid
-    for m in reversed(candidate_positions):
-        chapter_counter[0] += 1
-
-    # Reset and replace forward (counter must match order)
-    chapter_counter[0] = 0
-    result = []
-    prev_end = 0
-    for m in candidate_positions:
-        chapter_counter[0] += 1
-        result.append(text[prev_end:m.start()])
-        result.append(f"<CHAPTER {chapter_counter[0]}>")
-        prev_end = m.end()
-    result.append(text[prev_end:])
-
-    return "".join(result)
-
-
-def split_into_chapters(text: str) -> list[dict]:
-    """
-    Split text by <CHAPTER N> markers.
-    Returns list of { number, text, word_count }.
-    If no markers found, returns empty list (no chapterisation).
-    """
-    marker_re = re.compile(r"<CHAPTER (\d+)>")
-    parts = marker_re.split(text)
-
-    if len(parts) <= 1:
-        # No chapter markers — caller treats this as "no chapters"
-        return []
+def split_into_chapters(text: str) -> List[dict]:
+    """Split text by standardized <CHAPTER num|title> markers."""
+    marker_re = re.compile(r"<CHAPTER (\d+)\|(.*?)>")
+    markers = list(marker_re.finditer(text))
+    
+    if not markers: return []
 
     chapters = []
-
-    # parts[0] is preamble (before first chapter) — skip if trivial
-    # Alternating: chapter_number, chapter_text, ...
-    for i in range(1, len(parts), 2):
-        ch_num = int(parts[i])
-        ch_text = parts[i + 1].strip() if i + 1 < len(parts) else ""
-        if ch_text:
+    for i, m in enumerate(markers):
+        num = int(m.group(1))
+        title = m.group(2).strip()
+        
+        start_content = m.end()
+        end_content = markers[i+1].start() if i+1 < len(markers) else len(text)
+        
+        content = text[start_content:end_content].strip()
+        if content:
             chapters.append({
-                "number": ch_num,
-                "text": ch_text,
-                "word_count": len(ch_text.split()),
+                "number": num,
+                "title": title,
+                "text": content,
+                "word_count": len(content.split()),
+                "start_offset": start_content,
+                "end_offset": end_content
             })
-
     return chapters
 
-
-def extract_epub(content: bytes) -> tuple[str, str, str]:
-    """
-    Extract clean text + metadata from an EPUB file.
-    Returns: (full_text, title, author)
-
-    EPUB chapterisation is reliable — each ITEM_DOCUMENT is a chapter.
-    We use the heading text as the chapter title when available.
-    """
-    import io
+def extract_epub(content: bytes) -> Tuple[str, str, str]:
+    """Extract text and semantic titles from EPUB."""
     import ebooklib
     from ebooklib import epub
     from bs4 import BeautifulSoup
 
     book = epub.read_epub(io.BytesIO(content))
+    title = (book.get_metadata("DC", "title") or [("Unknown",)])[0][0]
+    author = (book.get_metadata("DC", "creator") or [("Unknown",)])[0][0]
 
-    # Metadata
-    title_meta = book.get_metadata("DC", "title")
-    title = title_meta[0][0] if title_meta else "Unknown"
-    author_meta = book.get_metadata("DC", "creator")
-    author = author_meta[0][0] if author_meta else "Unknown"
-
-    # Extract text from all document items
-    ch_count = 0
     chapter_parts = []
+    ch_count = 0
 
     for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
         soup = BeautifulSoup(item.get_content(), "lxml")
-        text = soup.get_text(separator="\n").strip()
-
-        if not text:
-            continue
-
-        # Only count as a chapter if it has meaningful content (>100 chars)
-        # Avoids treating cover pages, TOC, etc. as chapters
-        if len(text) < 100:
-            continue
+        
+        # 1. Clean HTML junk (scripts, styles)
+        for s in soup(["script", "style"]): s.decompose()
+        
+        # 2. Attempt Title Extraction
+        # Look for the first major heading
+        header = soup.find(['h1', 'h2', 'h3'])
+        ch_title = header.get_text().strip() if header else f"Chapter {ch_count + 1}"
+        
+        # 3. Get text content
+        raw_text = soup.get_text(separator="\n").strip()
+        if len(raw_text) < 200: continue # Skip TOC, covers, small files
 
         ch_count += 1
-        chapter_parts.append(f"<CHAPTER {ch_count}>\n{text}")
+        # Normalize title: remove "Chapter 1" prefix if already present in extracted title
+        clean_ch_title = re.sub(r"^(chapter|part|section)\s*\d+\s*[:\-]?\s*", "", ch_title, flags=re.I).strip()
+        final_title = f"Chapter {ch_count}"
+        if clean_ch_title and clean_ch_title.lower() != final_title.lower():
+            final_title = f"{final_title}: {clean_ch_title}"
+
+        chapter_parts.append(f"<CHAPTER {ch_count}|{final_title}>\n{raw_text}")
 
     full_text = "\n\n".join(chapter_parts)
-    full_text = _clean_epub_text(full_text)
-
-    return full_text, title, author
-
+    return _clean_epub_text(full_text), title, author
 
 def _clean_epub_text(text: str) -> str:
-    """Clean EPUB text without re-running chapter detection (markers already set)."""
     text = re.sub(r"\n{3,}", "\n\n", text)
-    text = re.sub(r"^\s*\d+\s*$", "", text, flags=re.MULTILINE)
     return text.strip()

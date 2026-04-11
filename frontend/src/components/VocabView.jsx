@@ -4,6 +4,7 @@ import { AppContext } from '../App'
 import WordDetailModal from './WordDetailModal'
 import { exportData } from '../utils/export'
 import Pagination from './common/Pagination'
+import SidebarTOC from './SidebarTOC'
 
 const API = 'http://localhost:8000'
 
@@ -188,7 +189,7 @@ function WordCard({ entry, isKnown, onToggle, onDetail }) {
 }
 
 export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBook }) {
-  const { settings } = useContext(AppContext)
+  const { settings, setIsLoading } = useContext(AppContext)
   const [tab, setTab] = useState('lexicon') // lexicon | intelligence
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -197,9 +198,35 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
   const [entityFilter, setEntityFilter] = useState('All') // All | Character | Location | Concept
   const [selectedWord, setSelectedWord] = useState(null)
   const [showExportOptions, setShowExportOptions] = useState(false)
+  const [selectedChapter, setSelectedChapter] = useState(null)
+  const [localVocab, setLocalVocab] = useState(book.vocab || [])
   
   const [sortBy, setSortBy] = useState('repeated') 
   const [sortOrder, setSortOrder] = useState('desc')
+
+  // --- Chapter-Aware Data Loading ---
+  useEffect(() => {
+    if (selectedChapter === null) {
+      setLocalVocab(book.vocab || [])
+      return
+    }
+
+    const fetchChapterData = async () => {
+      setIsLoading(true)
+      try {
+        const resp = await fetch(`${API}/api/library/${book.id}/vocab?chapter=${selectedChapter}&page_size=1000`)
+        if (resp.ok) {
+          const data = await resp.json()
+          setLocalVocab(data.items)
+        }
+      } catch (err) {
+        console.error('Failed to load chapter vocab', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchChapterData()
+  }, [selectedChapter, book.id, book.vocab, setIsLoading])
 
   const handleToggleKnown = useCallback((lemma, isKnown) => {
     onUpdate(lemma, { ...sm2Data[lemma], status: isKnown ? 'learning' : 'mastered' })
@@ -214,8 +241,7 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
 
   // --- Lexicon Filtering ---
   const filteredLexicon = useMemo(() => {
-    if (!book || !book.vocab) return []
-    let result = [...book.vocab]
+    let result = [...localVocab]
 
     if (search) {
       const q = search.toLowerCase()
@@ -248,18 +274,23 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
     })
 
     return result
-  }, [book, search, filterLevel, filterType, sortBy, sortOrder])
+  }, [localVocab, search, filterLevel, filterType, sortBy, sortOrder])
 
   // --- Intelligence Filtering ---
   const filteredEntities = useMemo(() => {
     if (!book || !book.entities) return []
     let result = [...book.entities]
+    
+    if (selectedChapter !== null) {
+      result = result.filter(e => e.first_chapter === selectedChapter)
+    }
+
     if (entityFilter !== 'All') {
       result = result.filter(e => e.label === entityFilter)
     }
     result.sort((a, b) => (b.count || 0) - (a.count || 0))
     return result
-  }, [book, entityFilter])
+  }, [book, entityFilter, selectedChapter])
 
   const activeItems = tab === 'lexicon' ? filteredLexicon : filteredEntities
   const totalPages = Math.ceil(activeItems.length / PAGE_SIZE)
@@ -270,204 +301,212 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
   }, [page, tab])
 
   return (
-    <div className="vocab-view" style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '8rem' }}>
-      <div style={{ marginBottom: '5rem' }}>
-        <button className="btn--secondary" onClick={onBack} style={{ marginBottom: '2.5rem', borderRadius: '12px', padding: '0.6rem 1.2rem' }}>⬅ Library Dashboard</button>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Volume Archive</span>
-          <h2 className="serif-title" style={{ fontSize: '3.5rem', lineHeight: 1.1, margin: '0 0 1.5rem -0.1rem' }}>{cleanTitle(book.title)}</h2>
-        </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '500px', lineHeight: 1.5, margin: 0 }}>
-            {tab === 'lexicon' 
-              ? `Exploring the curated lexicon of ${book.vocab?.length} significant linguistic patterns.`
-              : `Analyzing the thematic gravity and relationship nebula of characters and concepts.`}
-          </p>
+    <div className="vocab-view-container" style={{ display: 'flex', gap: '3rem', maxWidth: '1400px', margin: '0 auto', padding: '0 2rem 8rem' }}>
+      <SidebarTOC 
+        chapters={book.chapters} 
+        selectedChapter={selectedChapter} 
+        onSelectChapter={(num) => { setSelectedChapter(num); setPage(1); }}
+        isMaster={book.id === 'master'}
+      />
 
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            <div style={{ background: 'var(--bg-subtle)', padding: '0.5rem', borderRadius: '18px', display: 'flex', gap: '0.4rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-              <button 
-                onClick={() => { setTab('lexicon'); setPage(1) }}
-                style={{ padding: '0.7rem 1.5rem', borderRadius: '14px', background: tab === 'lexicon' ? 'var(--bg-card)' : 'transparent', color: tab === 'lexicon' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 800, boxShadow: tab === 'lexicon' ? 'var(--shadow-sm)' : 'none', border: tab === 'lexicon' ? '1px solid var(--border)' : 'none', cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.2s' }}
-              >
-                LEXICON
-              </button>
-              <button 
-                onClick={() => { setTab('intelligence'); setPage(1) }}
-                style={{ padding: '0.7rem 1.5rem', borderRadius: '14px', background: tab === 'intelligence' ? 'var(--bg-card)' : 'transparent', color: tab === 'intelligence' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 800, boxShadow: tab === 'intelligence' ? 'var(--shadow-sm)' : 'none', border: tab === 'intelligence' ? '1px solid var(--border)' : 'none', cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.2s' }}
-              >
-                INTELLIGENCE
-              </button>
-            </div>
-
-            <div style={{ position: 'relative' }}>
-              <button 
-                className="btn--primary" 
-                onClick={() => setShowExportOptions(!showExportOptions)}
-                style={{ padding: '0.8rem 1.8rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 700, fontSize: '0.9rem' }}
-              >
-                <span>📥</span> EXPORT ARCHIVE
-              </button>
-              
-              <AnimatePresence>
-                {showExportOptions && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    style={{ position: 'absolute', top: '120%', right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'var(--shadow-lg)', zIndex: 100, minWidth: '240px', padding: '0.75rem' }}
-                  >
-                    <button onClick={() => { exportData('anki', filteredLexicon, book.title); setShowExportOptions(false) }} style={{ width: '100%', padding: '1rem', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, color: 'var(--text)', borderRadius: '10px' }}>📇 Anki-Ready (CSV)</button>
-                    <button onClick={() => { exportData('csv', filteredLexicon, book.title); setShowExportOptions(false) }} style={{ width: '100%', padding: '1rem', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, color: 'var(--text)', borderRadius: '10px' }}>📊 Plain Spreadsheet (CSV)</button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+      <div className="vocab-content" style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ marginBottom: '5rem' }}>
+          <button className="btn--secondary" onClick={onBack} style={{ marginBottom: '2.5rem', borderRadius: '12px', padding: '0.6rem 1.2rem' }}>⬅ Library Dashboard</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Volume Archive</span>
+            <h2 className="serif-title" style={{ fontSize: '3.5rem', lineHeight: 1.1, margin: '0 0 1.5rem -0.1rem' }}>{cleanTitle(book.title)}</h2>
           </div>
-        </div>
-      </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '500px', lineHeight: 1.5, margin: 0 }}>
+              {tab === 'lexicon' 
+                ? `Exploring the curated lexicon of ${localVocab.length} significant linguistic patterns.`
+                : `Analyzing the thematic gravity and relationship nebula of characters and concepts.`}
+            </p>
 
-      {tab === 'lexicon' ? (
-        <>
-          <div className="vocab-header-card">
-            <div className="vocab-controls" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' }}>
-                <div className="search-input-wrapper" style={{ position: 'relative', flex: 1, minWidth: '350px' }}>
-                  <span style={{ position: 'absolute', left: '1.5rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '1.4rem' }}>🔍</span>
-                  <input type="text" placeholder="Search ledger..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} style={{ outline: 'none' }} />
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--bg-subtle)', padding: '0.75rem', borderRadius: '16px' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginLeft: '0.75rem', letterSpacing: '0.1em' }}>SORT BY</span>
-                  {['alphabet', 'repeated', 'frequency'].map(s => (
-                    <button key={s} onClick={() => { if (sortBy === s) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); else { setSortBy(s); setSortOrder('desc') }; setPage(1) }} style={{ padding: '0.6rem 1.25rem', background: sortBy === s ? 'var(--bg-card)' : 'transparent', border: sortBy === s ? '1px solid var(--border)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', fontWeight: sortBy === s ? 800 : 600, textTransform: 'uppercase', fontSize: '0.8rem', color: sortBy === s ? 'var(--primary)' : 'var(--text-muted)' }}>
-                      {s} {sortBy === s && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                <div className="filter-pills">
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', alignSelf: 'center', margin: '0 0.5rem', letterSpacing: '0.05em' }}>LEVEL</span>
-                  {['All', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lv => (
-                    <button key={lv} className={`filter-pill ${filterLevel === lv ? 'filter-pill--active' : ''}`} style={{ padding: '0.5rem 1.1rem', background: filterLevel === lv ? 'var(--bg-card)' : 'transparent', border: filterLevel === lv ? '1px solid var(--border)' : 'none', borderRadius: '10px', fontWeight: filterLevel === lv ? 800 : 600, fontSize: '0.85rem', color: filterLevel === lv ? 'var(--primary)' : 'var(--text-muted)' }} onClick={() => { setFilterLevel(lv); setPage(1) }}>{lv}</button>
-                  ))}
-                </div>
-                <div className="filter-pills">
-                  {['All', 'Words', 'Phrases'].map(t => (
-                    <button key={t} className={`filter-pill ${filterType === t ? 'filter-pill--active' : ''}`} style={{ padding: '0.5rem 1.5rem', background: filterType === t ? 'var(--bg-card)' : 'transparent', border: filterType === t ? '1px solid var(--border)' : 'none', borderRadius: '10px', fontWeight: filterType === t ? 800 : 600, fontSize: '0.85rem', color: filterType === t ? 'var(--primary)' : 'var(--text-muted)' }} onClick={() => { setFilterType(t); setPage(1) }}>{t}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {currentItems.map(entry => (
-              <WordCard key={entry.lemma} entry={entry} isKnown={sm2Data[entry.lemma]?.status === 'mastered'} onToggle={handleToggleKnown} onDetail={setSelectedWord} />
-            ))}
-          </div>
-        </>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{ 
-              padding: '4rem 3rem', 
-              background: 'var(--bg-card)', 
-              borderRadius: '28px', 
-              color: 'var(--text)',
-              textAlign: 'center',
-              boxShadow: 'var(--shadow-lg)',
-              border: '1px solid var(--border)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Subtle background glow */}
-            <div style={{ 
-              position: 'absolute', 
-              top: '-50%', left: '-20%', right: '-20%', bottom: '-50%',
-              background: 'radial-gradient(circle at center, rgba(var(--primary-rgb), 0.08) 0%, transparent 70%)',
-              pointerEvents: 'none'
-            }} />
-
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ 
-                fontSize: '3.5rem', 
-                marginBottom: '1.5rem',
-                filter: 'drop-shadow(0 10px 15px rgba(var(--primary-rgb), 0.2))'
-              }}>🌌</div>
-              
-              <h3 style={{ 
-                fontSize: '2.2rem', 
-                marginBottom: '1rem', 
-                fontWeight: 800,
-                letterSpacing: '-0.02em',
-                color: 'var(--text)'
-              }}>
-                Intelligence Nebula
-              </h3>
-              
-              <p style={{ 
-                color: 'var(--text-muted)', 
-                fontSize: '1.15rem', 
-                maxWidth: '550px', 
-                margin: '0 auto 2.5rem',
-                lineHeight: 1.6
-              }}>
-                Explore the thematic gravity and relationship archive of characters, locations, and concepts within this volume.
-              </p>
-              
-              <button 
-                onClick={() => onSelectBook(book, true)}
-                className="btn--primary"
-                style={{ 
-                  padding: '1.2rem 3rem', 
-                  borderRadius: '16px', 
-                  fontWeight: 800, 
-                  fontSize: '1.1rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.75rem'
-                }}
-              >
-                <span>Launch Graph</span>
-                <span style={{ fontSize: '1.3rem' }}>→</span>
-              </button>
-            </div>
-          </motion.div>
-
-          <div className="vocab-header-card" style={{ padding: '1.5rem' }}>
-            <div className="filter-pills" style={{ justifyContent: 'center' }}>
-              {['All', 'Character', 'Location', 'Organization', 'Concept'].map(type => (
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg-subtle)', padding: '0.5rem', borderRadius: '18px', display: 'flex', gap: '0.4rem', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
                 <button 
-                  key={type} 
-                  className={`filter-pill ${entityFilter === type ? 'filter-pill--active' : ''}`}
-                  onClick={() => { setEntityFilter(type); setPage(1) }}
-                  style={{ padding: '0.6rem 1.5rem', background: entityFilter === type ? 'var(--bg-card)' : 'transparent', borderRadius: '10px', fontWeight: entityFilter === type ? 800 : 600, fontSize: '0.85rem', color: entityFilter === type ? 'var(--primary)' : 'var(--text-muted)', border: entityFilter === type ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+                  onClick={() => { setTab('lexicon'); setPage(1) }}
+                  style={{ padding: '0.7rem 1.5rem', borderRadius: '14px', background: tab === 'lexicon' ? 'var(--bg-card)' : 'transparent', color: tab === 'lexicon' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 800, boxShadow: tab === 'lexicon' ? 'var(--shadow-sm)' : 'none', border: tab === 'lexicon' ? '1px solid var(--border)' : 'none', cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.2s' }}
                 >
-                  {type === 'All' ? 'ALL ENTITIES' : type.toUpperCase()}
+                  LEXICON
                 </button>
+                <button 
+                  onClick={() => { setTab('intelligence'); setPage(1) }}
+                  style={{ padding: '0.7rem 1.5rem', borderRadius: '14px', background: tab === 'intelligence' ? 'var(--bg-card)' : 'transparent', color: tab === 'intelligence' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 800, boxShadow: tab === 'intelligence' ? 'var(--shadow-sm)' : 'none', border: tab === 'intelligence' ? '1px solid var(--border)' : 'none', cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.2s' }}
+                >
+                  INTELLIGENCE
+                </button>
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <button 
+                  className="btn--primary" 
+                  onClick={() => setShowExportOptions(!showExportOptions)}
+                  style={{ padding: '0.8rem 1.8rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 700, fontSize: '0.9rem' }}
+                >
+                  <span>📥</span> EXPORT ARCHIVE
+                </button>
+                
+                <AnimatePresence>
+                  {showExportOptions && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      style={{ position: 'absolute', top: '120%', right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'var(--shadow-lg)', zIndex: 100, minWidth: '240px', padding: '0.75rem' }}
+                    >
+                      <button onClick={() => { exportData('anki', filteredLexicon, book.title); setShowExportOptions(false) }} style={{ width: '100%', padding: '1rem', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, color: 'var(--text)', borderRadius: '10px' }}>📇 Anki-Ready (CSV)</button>
+                      <button onClick={() => { exportData('csv', filteredLexicon, book.title); setShowExportOptions(false) }} style={{ width: '100%', padding: '1rem', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, color: 'var(--text)', borderRadius: '10px' }}>📊 Plain Spreadsheet (CSV)</button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {tab === 'lexicon' ? (
+          <>
+            <div className="vocab-header-card">
+              <div className="vocab-controls" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center' }}>
+                  <div className="search-input-wrapper" style={{ position: 'relative', flex: 1, minWidth: '350px' }}>
+                    <span style={{ position: 'absolute', left: '1.5rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '1.4rem' }}>🔍</span>
+                    <input type="text" placeholder="Search ledger..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} style={{ outline: 'none' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--bg-subtle)', padding: '0.75rem', borderRadius: '16px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginLeft: '0.75rem', letterSpacing: '0.1em' }}>SORT BY</span>
+                    {['alphabet', 'repeated', 'frequency'].map(s => (
+                      <button key={s} onClick={() => { if (sortBy === s) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); else { setSortBy(s); setSortOrder('desc') }; setPage(1) }} style={{ padding: '0.6rem 1.25rem', background: sortBy === s ? 'var(--bg-card)' : 'transparent', border: sortBy === s ? '1px solid var(--border)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', fontWeight: sortBy === s ? 800 : 600, textTransform: 'uppercase', fontSize: '0.8rem', color: sortBy === s ? 'var(--primary)' : 'var(--text-muted)' }}>
+                        {s} {sortBy === s && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                  <div className="filter-pills">
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', alignSelf: 'center', margin: '0 0.5rem', letterSpacing: '0.05em' }}>LEVEL</span>
+                    {['All', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lv => (
+                      <button key={lv} className={`filter-pill ${filterLevel === lv ? 'filter-pill--active' : ''}`} style={{ padding: '0.5rem 1.1rem', background: filterLevel === lv ? 'var(--bg-card)' : 'transparent', border: filterLevel === lv ? '1px solid var(--border)' : 'none', borderRadius: '10px', fontWeight: filterLevel === lv ? 800 : 600, fontSize: '0.85rem', color: filterLevel === lv ? 'var(--primary)' : 'var(--text-muted)' }} onClick={() => { setFilterLevel(lv); setPage(1) }}>{lv}</button>
+                    ))}
+                  </div>
+                  <div className="filter-pills">
+                    {['All', 'Words', 'Phrases'].map(t => (
+                      <button key={t} className={`filter-pill ${filterType === t ? 'filter-pill--active' : ''}`} style={{ padding: '0.5rem 1.5rem', background: filterType === t ? 'var(--bg-card)' : 'transparent', border: filterType === t ? '1px solid var(--border)' : 'none', borderRadius: '10px', fontWeight: filterType === t ? 800 : 600, fontSize: '0.85rem', color: filterType === t ? 'var(--primary)' : 'var(--text-muted)' }} onClick={() => { setFilterType(t); setPage(1) }}>{t}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              {currentItems.map(entry => (
+                <WordCard key={entry.lemma} entry={entry} isKnown={sm2Data[entry.lemma]?.status === 'mastered'} onToggle={handleToggleKnown} onDetail={setSelectedWord} />
               ))}
             </div>
-          </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ 
+                padding: '4rem 3rem', 
+                background: 'var(--bg-card)', 
+                borderRadius: '28px', 
+                color: 'var(--text)',
+                textAlign: 'center',
+                boxShadow: 'var(--shadow-lg)',
+                border: '1px solid var(--border)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Subtle background glow */}
+              <div style={{ 
+                position: 'absolute', 
+                top: '-50%', left: '-20%', right: '-20%', bottom: '-50%',
+                background: 'radial-gradient(circle at center, rgba(var(--primary-rgb), 0.08) 0%, transparent 70%)',
+                pointerEvents: 'none'
+              }} />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-            {currentItems.length > 0 ? (
-              currentItems.map((ent, i) => <EntityCard key={i} entity={ent} />)
-            ) : (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '10rem 2rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', border: '2px dashed var(--border)' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }}>No matching entities found.</p>
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ 
+                  fontSize: '3.5rem', 
+                  marginBottom: '1.5rem',
+                  filter: 'drop-shadow(0 10px 15px rgba(var(--primary-rgb), 0.2))'
+                }}>🌌</div>
+                
+                <h3 style={{ 
+                  fontSize: '2.2rem', 
+                  marginBottom: '1rem', 
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  color: 'var(--text)'
+                }}>
+                  Intelligence Nebula
+                </h3>
+                
+                <p style={{ 
+                  color: 'var(--text-muted)', 
+                  fontSize: '1.15rem', 
+                  maxWidth: '550px', 
+                  margin: '0 auto 2.5rem',
+                  lineHeight: 1.6
+                }}>
+                  Explore the thematic gravity and relationship archive of characters, locations, and concepts within this volume.
+                </p>
+                
+                <button 
+                  onClick={() => onSelectBook({ ...book, initialChapter: selectedChapter }, true)}
+                  className="btn--primary"
+                  style={{ 
+                    padding: '1.2rem 3rem', 
+                    borderRadius: '16px', 
+                    fontWeight: 800, 
+                    fontSize: '1.1rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}
+                >
+                  <span>Launch Graph</span>
+                  <span style={{ fontSize: '1.3rem' }}>→</span>
+                </button>              </div>
+            </motion.div>
+
+            <div className="vocab-header-card" style={{ padding: '1.5rem' }}>
+              <div className="filter-pills" style={{ justifyContent: 'center' }}>
+                {['All', 'Character', 'Location', 'Organization', 'Concept'].map(type => (
+                  <button 
+                    key={type} 
+                    className={`filter-pill ${entityFilter === type ? 'filter-pill--active' : ''}`}
+                    onClick={() => { setEntityFilter(type); setPage(1) }}
+                    style={{ padding: '0.6rem 1.5rem', background: entityFilter === type ? 'var(--bg-card)' : 'transparent', borderRadius: '10px', fontWeight: entityFilter === type ? 800 : 600, fontSize: '0.85rem', color: entityFilter === type ? 'var(--primary)' : 'var(--text-muted)', border: entityFilter === type ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+                  >
+                    {type === 'All' ? 'ALL ENTITIES' : type.toUpperCase()}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+              {currentItems.length > 0 ? (
+                currentItems.map((ent, i) => <EntityCard key={i} entity={ent} />)
+              ) : (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '10rem 2rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', border: '2px dashed var(--border)' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }}>No matching entities found.</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
 
-      <AnimatePresence>
-        {selectedWord && <WordDetailModal entry={selectedWord} onClose={() => setSelectedWord(null)} onSpeak={handleSpeak} onSelectBook={onSelectBook} />}
-      </AnimatePresence>
+        <AnimatePresence>
+          {selectedWord && <WordDetailModal entry={selectedWord} onClose={() => setSelectedWord(null)} onSpeak={handleSpeak} onSelectBook={onSelectBook} />}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }

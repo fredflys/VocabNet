@@ -3,13 +3,19 @@ import ForceGraph2D from 'react-force-graph-2d'
 import { motion, AnimatePresence } from 'framer-motion'
 import DensitySlider from './common/DensitySlider'
 
-export default function IntelligenceNebula({ entities, bookTitle, onClose, totalChapters = 1 }) {
+export default function IntelligenceNebula({ entities, bookTitle, onClose, totalChapters = 1, initialChapter = null }) {
   const fgRef = useRef()
   const [density, setDensity] = useState(50)
   const [activeFilter, setActiveFilter] = useState('All')
   const [selectedNode, setSelectedNode] = useState(null)
   const [selectedLink, setSelectedLink] = useState(null)
-  const [currentChapter, setCurrentChapter] = useState(totalChapters || 1)
+  
+  // If an initialChapter is provided, we start in "Filter Mode" for that chapter.
+  // Otherwise, we default to the "Full Book" view.
+  const [currentChapter, setCurrentChapter] = useState(() => {
+    if (initialChapter !== null) return initialChapter
+    return Math.max(1, totalChapters || 1)
+  })
 
   // --- Theme Detection ---
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
@@ -46,12 +52,11 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
     })
 
     // 3. Filter by type pill BEFORE slicing density
-    // This ensures we show the top characters, not just characters in the top global list
     if (activeFilter !== 'All') {
       standardized = standardized.filter(e => e.label.toLowerCase() === activeFilter.toLowerCase())
     }
 
-    // 4. Sort and slice based on prominence
+    // 4. Sort and slice
     standardized.sort((a, b) => b.prominence - a.prominence)
     const visibleEntities = standardized.slice(0, density)
     const visibleIds = new Set(visibleEntities.map(e => e.text))
@@ -89,12 +94,9 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
   // --- Force Tuning ---
   useEffect(() => {
     if (!fgRef.current) return
-    // Increase spread
     fgRef.current.d3Force('charge').strength(-600).distanceMax(800)
     fgRef.current.d3Force('link').distance(l => 150 + (l.weight * 3))
     fgRef.current.d3Force('center').strength(0.05)
-    
-    // Re-heat simulation on data change to allow new nodes to find their place
     fgRef.current.d3ReheatSimulation()
   }, [graphData])
 
@@ -113,7 +115,6 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
   }, [selectedLink])
 
   const handleNodeDragEnd = useCallback(node => {
-    // Pin node position after dragging
     node.fx = node.x
     node.fy = node.y
   }, [])
@@ -180,10 +181,18 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
           nodeCanvasObject={(node, ctx, globalScale) => {
             const label = node.label
             const isSelected = selectedNode?.id === node.id || selectedLink?.source.id === node.id || selectedLink?.target.id === node.id
+            const isNew = node.chapter === currentChapter && currentChapter !== totalChapters
             const baseColor = getColor(node.type)
             
-            ctx.shadowColor = baseColor
-            ctx.shadowBlur = isSelected ? 25 : 10
+            // Dynamic Pulse for "New" entities in the selected chapter
+            if (isNew) {
+              const pulse = (Math.sin(Date.now() / 400) + 1) / 2
+              ctx.shadowColor = baseColor
+              ctx.shadowBlur = 15 + (pulse * 20)
+            } else {
+              ctx.shadowColor = baseColor
+              ctx.shadowBlur = isSelected ? 25 : 10
+            }
             
             ctx.beginPath()
             ctx.arc(node.x, node.y, node.val, 0, 2 * Math.PI, false)
@@ -222,7 +231,7 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
           <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', background: theme.sidebarBg, padding: '1rem 2.5rem', borderRadius: '24px', boxShadow: 'var(--shadow-lg)', border: `1px solid ${theme.borderColor}`, backdropFilter: 'blur(20px)' }}>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               {['All', 'Character', 'Location', 'Organization', 'Concept'].map(type => (
-                <button key={type} onClick={() => { setActiveFilter(type); setDensity(30); }} style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', border: 'none', background: activeFilter === type ? 'var(--primary)' : 'transparent', color: activeFilter === type ? 'white' : theme.mutedText, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>{type === 'All' ? 'GALAXY' : type.toUpperCase()}</button>
+                <button key={type} onClick={() => setActiveFilter(type)} style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', border: 'none', background: activeFilter === type ? 'var(--primary)' : 'transparent', color: activeFilter === type ? 'white' : theme.mutedText, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>{type === 'All' ? 'GALAXY' : type.toUpperCase()}</button>
               ))}
             </div>
             <div style={{ width: '1px', height: '30px', background: theme.borderColor }}></div>

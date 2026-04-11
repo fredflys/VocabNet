@@ -3,7 +3,7 @@ Library router — CRUD for the local book shelf.
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 
 from repositories.book_repository import BookRepository
 from services.database import get_session
@@ -62,11 +62,12 @@ async def get_book_vocab(
     search: str = Query(""),
     cefr: str = Query(""),
     type: str = Query(""),
+    chapter: Optional[int] = Query(None),
     session: AsyncSession = Depends(get_session)
 ):
     """Paginated, searchable vocab for a book."""
     repo = BookRepository(session)
-    items, total_count = await repo.get_vocab_paginated(book_id, page, page_size, search, cefr, type)
+    items, total_count = await repo.get_vocab_paginated(book_id, page, page_size, search, cefr, type, chapter)
     
     return {
         "items": items,
