@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 
 const CEFR_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
@@ -10,6 +10,7 @@ export default function PlacementQuiz({ onComplete, onCancel }) {
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState({}) // { level: { known: N, total: N } }
   const [result, setResult] = useState(null)
+  const [quizDone, setQuizDone] = useState(false)
 
   // Expanded, high-quality diagnostic words categorized by CEFR difficulty
   const diagnosticWords = useMemo(() => ({
@@ -25,12 +26,12 @@ export default function PlacementQuiz({ onComplete, onCancel }) {
   useMemo(() => {
     const levels = ['B1', 'B2', 'C1', 'C2']
     const qs = []
-    
+
     for (const level of levels) {
       const words = [...diagnosticWords[level]].sort(() => Math.random() - 0.5).slice(0, 5)
       words.forEach(w => qs.push({ word: w, level }))
     }
-    
+
     setQuestions(qs.sort(() => Math.random() - 0.5))
     setLoading(false)
   }, [diagnosticWords])
@@ -39,54 +40,34 @@ export default function PlacementQuiz({ onComplete, onCancel }) {
     const q = questions[index]
     if (!q) return
 
-    setAnswers(prev => {
-      const level = q.level
-      const entry = prev[level] || { known: 0, total: 0 }
-      return {
-        ...prev,
-        [level]: {
-          known: entry.known + (known ? 1 : 0),
-          total: entry.total + 1,
-        },
-      }
-    })
+    const level = q.level
+    const entry = answers[level] || { known: 0, total: 0 }
+    const newAnswers = {
+      ...answers,
+      [level]: {
+        known: entry.known + (known ? 1 : 0),
+        total: entry.total + 1,
+      },
+    }
+    setAnswers(newAnswers)
 
     if (index + 1 >= questions.length) {
-      // Calculate result
-      setTimeout(() => computeResult(), 100)
+      setQuizDone(true)
     } else {
       setIndex(i => i + 1)
     }
-  }, [index, questions])
+  }, [index, questions, answers])
 
-  const computeResult = useCallback(() => {
-    // Get final answers state — need to compute from scratch
-    const finalAnswers = {}
-    questions.forEach((q, i) => {
-      // We need actual answers stored per question too...
-      // Simpler: use the answers state + one more
-    })
-
-    // Use the current answers state (which has accumulated all including last answer)
-    // We rely on the setState callback having completed before this setTimeout fires
-    setAnswers(prev => {
-      let level = 'A2'
-      const levels = ['B1', 'B2', 'C1', 'C2']
-      for (const l of levels) {
-        const entry = prev[l]
-        if (entry && entry.total > 0) {
-          const pct = entry.known / entry.total
-          if (pct >= 0.6) {
-            level = l
-          } else {
-            break
-          }
-        }
-      }
-      setResult(level)
-      return prev
-    })
-  }, [questions])
+  useEffect(() => {
+    if (!quizDone) return
+    let level = 'A2'
+    for (const l of ['B1', 'B2', 'C1', 'C2']) {
+      const entry = answers[l]
+      if (entry && entry.total > 0 && entry.known / entry.total >= 0.6) level = l
+      else break
+    }
+    setResult(level)
+  }, [quizDone, answers])
 
   if (loading) {
     return (
@@ -162,4 +143,3 @@ export default function PlacementQuiz({ onComplete, onCancel }) {
     </div>
   )
 }
-

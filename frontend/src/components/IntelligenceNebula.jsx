@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useCallback, useEffect } from 'react'
+/* eslint-disable react-hooks/exhaustive-deps */
 import ForceGraph2D from 'react-force-graph-2d'
 import { motion, AnimatePresence } from 'framer-motion'
 import DensitySlider from './common/DensitySlider'
@@ -18,7 +19,14 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
   })
 
   // --- Theme Detection ---
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark')
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.getAttribute('data-theme') === 'dark')
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
   const theme = {
     bg: isDark ? 'radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%)' : 'radial-gradient(circle at center, #fdfbf7 0%, #f5f2eb 100%)',
     headerBg: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)',

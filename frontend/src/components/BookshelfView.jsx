@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const API = 'http://localhost:8000'
-
-/**
- * Strips file extensions like .epub, .txt, .pdf from strings.
- */
-function cleanTitle(title) {
-  if (!title) return 'Untitled'
-  return title.replace(/\.(epub|txt|pdf|mobi)$/i, '').replace(/[_-]/g, ' ')
-}
+import { API } from '../utils/config'
+import { cleanTitle } from '../utils/format'
 
 function BookCard({ book, index, onSelect, onDeleted }) {
   const [isConfirming, setIsConfirming] = useState(false)
@@ -27,6 +19,7 @@ function BookCard({ book, index, onSelect, onDeleted }) {
     try {
       const resp = await fetch(`${API}/api/library/${book.id}`, { method: 'DELETE' })
       if (resp.ok) onDeleted(book.id)
+      else setIsConfirming(false)
     } catch (err) {
       console.error(err)
       setIsConfirming(false)

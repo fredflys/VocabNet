@@ -1,9 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useContext } from 'react'
 import { getStudySession, gradeSM2, createSM2State } from '../utils/sm2'
-import { updateWordSM2, recordSession, updateStreak } from '../utils/studyStore'
+import { recordSession, updateStreak } from '../utils/studyStore'
 import { AppContext } from '../App'
-
-const API = 'http://localhost:8000'
+import { API } from '../utils/config'
 
 function speak(word, voice) {
   const audio = new Audio(`${API}/api/tts?word=${encodeURIComponent(word)}&voice=${encodeURIComponent(voice || 'en-US-AriaNeural')}`)
@@ -158,10 +157,9 @@ export default function FlashcardView({ book, sm2Data, onUpdate, onBack, chapter
                 <button
                   key={g.value}
                   className="grade-btn"
-                  style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: `2px solid ${g.color}`, background: 'var(--bg-card)', color: g.color, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}
+                  className="grade-btn"
+                  style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: `2px solid ${g.color}`, background: 'var(--bg-card)', color: g.color, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', '--btn-color': g.color }}
                   onClick={() => handleGrade(g.value)}
-                  onMouseEnter={e => { e.currentTarget.style.background = g.color; e.currentTarget.style.color = 'white' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = g.color }}
                 >
                   <span className="grade-btn__label">{g.label}</span>
                   <span className="grade-btn__key" style={{ opacity: 0.5, fontSize: '0.75rem' }}>{g.key}</span>

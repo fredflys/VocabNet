@@ -6,28 +6,9 @@ import { exportData } from '../utils/export'
 import Pagination from './common/Pagination'
 import SidebarTOC from './SidebarTOC'
 import TOCTrigger from './TOCTrigger'
-
-const API = 'http://localhost:8000'
-
-function cleanTitle(title) {
-  if (!title) return 'Untitled'
-  return title.replace(/\.(epub|txt|pdf|mobi)$/i, '').replace(/[_-]/g, ' ')
-}
-
-function HighlightedSentence({ sentence, lemma }) {
-  if (!sentence) return null
-  const regex = new RegExp(`(\\b${lemma}\\w*\\b)`, 'gi')
-  const parts = sentence.split(regex)
-  return (
-    <span>
-      {parts.map((part, i) => 
-        regex.test(part) ? (
-          <strong key={i} style={{ color: 'var(--primary)', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0 2px', borderRadius: '2px' }}>{part}</strong>
-        ) : part
-      )}
-    </span>
-  )
-}
+import HighlightedSentence from './common/HighlightedSentence'
+import { API } from '../utils/config'
+import { cleanTitle } from '../utils/format'
 
 function EntityCard({ entity }) {
   const labelColors = {

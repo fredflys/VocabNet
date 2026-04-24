@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import { API } from '../utils/config'
 
 const STATUS_MESSAGES = {
     0: 'Initializing neural engine...',
@@ -28,10 +29,13 @@ export default function ProcessingView({ jobId, fileName, onComplete, onCancel }
     const [statusMsg, setStatusMsg] = useState('Initializing...')
     const [error, setError] = useState('')
 
+    const onCompleteRef = useRef(onComplete)
+    useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
+
     useEffect(() => {
         if (!jobId) return
-        const es = new EventSource(`http://localhost:8000/api/job/stream/${jobId}`)
-        
+        const es = new EventSource(`${API}/api/job/stream/${jobId}`)
+
         es.onmessage = async (e) => {
             const data = JSON.parse(e.data)
             setProgress(data.progress || 0)
@@ -40,9 +44,9 @@ export default function ProcessingView({ jobId, fileName, onComplete, onCancel }
             if (data.status === 'done') {
                 es.close()
                 try {
-                    const res = await fetch(`http://localhost:8000/api/job/${jobId}`)
+                    const res = await fetch(`${API}/api/job/${jobId}`)
                     const finalData = await res.json()
-                    onComplete(finalData.result)
+                    onCompleteRef.current(finalData.result)
                 } catch(err) {
                     setError('Archive fetch failed.')
                 }
@@ -58,7 +62,7 @@ export default function ProcessingView({ jobId, fileName, onComplete, onCancel }
         }
 
         return () => es.close()
-    }, [jobId, onComplete])
+    }, [jobId])
 
     if (error) {
         return (

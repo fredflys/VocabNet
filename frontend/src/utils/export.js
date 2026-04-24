@@ -25,6 +25,10 @@ function formatDefinition(entry) {
   return defText
 }
 
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 const Exporters = {
   /**
    * Export to Anki-friendly CSV.
@@ -33,12 +37,12 @@ const Exporters = {
     const headers = ['Word', 'Definition', 'Example', 'Type', 'Tags']
     const rows = vocab.map(entry => {
       const word = escapeCSV(entry.lemma)
-      
+
       let defHtml = ''
-      if (entry.translation) defHtml += `<b>${entry.translation}</b><br>`
-      if (entry.simple_def) defHtml += `${entry.simple_def}<br>`
-      else if (entry.definition) defHtml += `${entry.definition}<br>`
-      if (entry.memory_tip) defHtml += `<br><i>Tip: ${entry.memory_tip}</i>`
+      if (entry.translation) defHtml += `<b>${escapeHtml(entry.translation)}</b><br>`
+      if (entry.simple_def) defHtml += `${escapeHtml(entry.simple_def)}<br>`
+      else if (entry.definition) defHtml += `${escapeHtml(entry.definition)}<br>`
+      if (entry.memory_tip) defHtml += `<br><i>Tip: ${escapeHtml(entry.memory_tip)}</i>`
       
       return [
         word,
@@ -102,4 +106,5 @@ export function exportData(format, vocab, bookTitle = 'VocabNet') {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }

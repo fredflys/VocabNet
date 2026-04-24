@@ -10,9 +10,9 @@ import IntelligenceNebula from './components/IntelligenceNebula'
 import TopLoadingBar from './components/common/TopLoadingBar'
 import { AnimatePresence } from 'framer-motion'
 
-export const AppContext = createContext()
+import { API } from './utils/config'
 
-const API = 'http://localhost:8000'
+export const AppContext = createContext()
 
 // Legacy Migration Logic
 const LEGACY_SETTINGS_KEY = 'audioprep_settings'
@@ -57,6 +57,7 @@ function App() {
   const fetchBooks = async () => {
     try {
       const resp = await fetch(`${API}/api/library`)
+      if (!resp.ok) throw new Error(`Failed to fetch books: ${resp.status}`)
       const data = await resp.json()
       setBooks(data)
     } catch (err) {

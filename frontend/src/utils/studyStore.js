@@ -2,7 +2,7 @@
  * Persistence layer for study data.
  * Migrated from localStorage-only to Backend API with localStorage fallback.
  */
-const API = 'http://localhost:8000'
+import { API } from './config'
 const SM2_KEY = 'vocabnet_sm2'
 
 // ── SM-2 state ──────────────────────────────────────────────────────────────
@@ -55,12 +55,17 @@ export async function updateSM2DataGlobal(data) {
 
 // ── Session history ─────────────────────────────────────────────────────────
 
-export function recordSession(session) {
-  fetch(`${API}/api/user/session`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(session)
-  }).catch(e => console.error('Failed to record session on backend', e))
+export async function recordSession(session) {
+  try {
+    const res = await fetch(`${API}/api/user/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(session)
+    })
+    if (!res.ok) console.error('Session recording failed:', res.status)
+  } catch (e) {
+    console.error('Failed to record session on backend', e)
+  }
 }
 
 // ── Streak ──────────────────────────────────────────────────────────────────
@@ -73,7 +78,7 @@ export async function fetchUserStats() {
       return data.stats
     }
   } catch (e) {
-    console.error('Failed to fetch user stats from backend')
+    console.error('Failed to fetch user stats from backend', e)
   }
   return { streak_count: 0, last_study_date: null }
 }

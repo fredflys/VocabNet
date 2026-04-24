@@ -1,8 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { getStudySession, gradeSM2, createSM2State } from '../utils/sm2'
 import { recordSession, updateStreak } from '../utils/studyStore'
-
-const API = 'http://localhost:8000'
+import { API } from '../utils/config'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -187,9 +186,8 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
                   transition: 'all 0.2s',
                   textAlign: 'left'
                 }}
+                className={`quiz-option ${selected === null ? 'quiz-option--hoverable' : ''}`}
                 onClick={() => handleSelect(i)}
-                onMouseEnter={e => { if (selected === null) e.currentTarget.style.border = '1px solid var(--primary)' }}
-                onMouseLeave={e => { if (selected === null) e.currentTarget.style.border = '1px solid var(--border)' }}
               >
                 <span className="quiz-option__letter" style={{ fontWeight: 800, background: 'rgba(0,0,0,0.05)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
                   {'ABCD'[i]}

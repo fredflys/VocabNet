@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react'
-
-const API = 'http://localhost:8000'
+import { API } from '../utils/config'
 
 export default function GutenbergSearch({ onStart, settings }) {
   const [query, setQuery] = useState('')

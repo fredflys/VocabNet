@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const API = 'http://localhost:8000'
+import { API } from '../utils/config'
 
 const LANGUAGES = [
   'Chinese', 'Spanish', 'French', 'Japanese', 'Korean',

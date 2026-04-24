@@ -2,39 +2,8 @@ import { useState, useEffect, useMemo, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AppContext } from '../App'
 import CollapsibleList from './common/CollapsibleList'
-
-const API = 'http://localhost:8000'
-
-/**
- * High-performance highlighter using optimized Regex for multiple word forms.
- */
-function HighlightedSentence({ sentence, lemma, inflections = [] }) {
-  if (!sentence) return null
-  
-  // Combine lemma and inflections into a single capture group
-  // Standardize inflections to include the lemma itself
-  const forms = Array.from(new Set([lemma.toLowerCase(), ...inflections.map(f => f.toLowerCase())]))
-  const pattern = `(\\b(?:${forms.join('|')})\\w*\\b)`
-  const regex = new RegExp(pattern, 'gi')
-  
-  const parts = sentence.split(regex)
-  
-  return (
-    <span>
-      {parts.map((part, i) => 
-        regex.test(part) ? (
-          <strong key={i} style={{ 
-            color: 'var(--primary)', 
-            background: 'rgba(var(--primary-rgb), 0.12)', 
-            padding: '0 4px', 
-            borderRadius: '4px',
-            fontWeight: 700
-          }}>{part}</strong>
-        ) : part
-      )}
-    </span>
-  )
-}
+import HighlightedSentence from './common/HighlightedSentence'
+import { API } from '../utils/config'
 
 export default function WordDetailModal({ entry, onClose, onSpeak, onSelectBook }) {
   const { setIsLoading } = useContext(AppContext)

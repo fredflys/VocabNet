@@ -383,3 +383,14 @@ button {
   box-shadow: var(--shadow-lg);
   color: var(--text);
 }
+
+/* ─── Grade Button Hover ────────────────────────────────────────────── */
+.grade-btn:hover {
+  background: var(--btn-color) !important;
+  color: white !important;
+}
+
+/* ─── Quiz Option Hover ─────────────────────────────────────────────── */
+.quiz-option--hoverable:hover {
+  border-color: var(--primary) !important;
+}
