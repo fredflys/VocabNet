@@ -81,19 +81,16 @@ async def run_book_pipeline(
         # 4. Vocabulary Filtering
         vocab = filter_vocabulary(lemma_data, user_level=user_level, top_n=3000)
 
+        _vocab_defaults = {
+            "is_idiom": False, "idiom_type": "",
+            "first_chapter": 0, "chapters": [],
+            "definition": "", "phonetics": "", "api_example": "",
+            "simple_def": "", "memory_tip": "", "llm_example": "",
+            "translation": "", "has_llm": False,
+        }
         for entry in vocab:
-            entry.setdefault("is_idiom", False)
-            entry.setdefault("idiom_type", "")
-            entry.setdefault("first_chapter", entry.get("first_chapter", 0))
-            entry.setdefault("chapters", entry.get("chapters", []))
-            entry["definition"] = ""
-            entry["phonetics"] = ""
-            entry["api_example"] = ""
-            entry["simple_def"] = ""
-            entry["memory_tip"] = ""
-            entry["llm_example"] = ""
-            entry["translation"] = ""
-            entry["has_llm"] = False
+            for k, v in _vocab_defaults.items():
+                entry.setdefault(k, v)
 
         update_job(job_id, progress=60)
 

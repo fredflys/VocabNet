@@ -87,7 +87,7 @@ class BookRepository(BaseRepository):
 
             try:
                 d["chapters"] = json.loads(v.chapter_list) if v.chapter_list else []
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 d["chapters"] = []
             enriched_vocab.append(d)
             
@@ -100,7 +100,7 @@ class BookRepository(BaseRepository):
             ed["count"] = e.occurrence_count
             try:
                 ed["relationships"] = json.loads(e.relationships) if e.relationships else []
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 ed["relationships"] = []
             res["entities"].append(ed)
             
@@ -218,24 +218,43 @@ class BookRepository(BaseRepository):
         stmt = stmt.order_by(BookVocab.occurrence_count.desc()).limit(page_size).offset((page - 1) * page_size)
         rows = (await self.session.execute(stmt)).scalars().all()
         
+        # Batch global counts for all lemmas on this page
+        lemmas = [r.lemma for r in rows]
+        global_counts = {}
+        if lemmas:
+            g_stmt = select(
+                BookVocab.lemma,
+                func.sum(BookVocab.occurrence_count).label("total")
+            ).where(BookVocab.lemma.in_(lemmas)).group_by(BookVocab.lemma)
+            global_counts = {r[0]: r[1] for r in (await self.session.execute(g_stmt)).all()}
+
+        # Batch contexts for all lemmas on this page
+        from collections import defaultdict
+        ctx_map = defaultdict(list)
+        if lemmas:
+            ctx_stmt = select(BookContext.lemma, BookContext.example_sentence).where(
+                BookContext.book_id == book_id,
+                BookContext.lemma.in_([l.lower() for l in lemmas])
+            )
+            for row in (await self.session.execute(ctx_stmt)).all():
+                if len(ctx_map[row[0]]) < 10:
+                    ctx_map[row[0]].append(row[1])
+
         items = []
         for r in rows:
             d = r.model_dump()
             d["count"] = r.occurrence_count
             try:
                 d["chapters"] = json.loads(r.chapter_list) if r.chapter_list else []
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 d["chapters"] = []
-            
-            g_stmt = select(func.sum(BookVocab.occurrence_count)).where(BookVocab.lemma == r.lemma)
-            d["global_count"] = (await self.session.execute(g_stmt)).scalar() or r.occurrence_count
-            
-            stmt_ctx = select(BookContext.example_sentence).where(BookContext.book_id == book_id, BookContext.lemma == r.lemma.lower()).limit(10)
-            d["examples"] = (await self.session.execute(stmt_ctx)).scalars().all()
+
+            d["global_count"] = global_counts.get(r.lemma, r.occurrence_count)
+            d["examples"] = ctx_map.get(r.lemma.lower(), [])
             d["example"] = d["examples"][0] if d["examples"] else ""
-            
+
             items.append(d)
-            
+
         return items, total_count
 
     async def get_contexts_for_word(self, lemma: str, exclude_book_id: Optional[str] = None) -> List[dict]:

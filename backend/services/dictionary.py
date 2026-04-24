@@ -121,26 +121,212 @@ _EMPTY_RESULT = {
     "pos": "", "source": "", "all_meanings": [],
 }
 
+_IRREGULAR_VERBS = {
+    "be": ["am", "is", "are", "was", "were", "been", "being"],
+    "have": ["has", "had", "having"],
+    "do": ["does", "did", "done", "doing"],
+    "go": ["goes", "went", "gone", "going"],
+    "say": ["says", "said", "saying"],
+    "get": ["gets", "got", "gotten", "getting"],
+    "make": ["makes", "made", "making"],
+    "know": ["knows", "knew", "known", "knowing"],
+    "think": ["thinks", "thought", "thinking"],
+    "take": ["takes", "took", "taken", "taking"],
+    "see": ["sees", "saw", "seen", "seeing"],
+    "come": ["comes", "came", "coming"],
+    "give": ["gives", "gave", "given", "giving"],
+    "find": ["finds", "found", "finding"],
+    "tell": ["tells", "told", "telling"],
+    "speak": ["speaks", "spoke", "spoken", "speaking"],
+    "write": ["writes", "wrote", "written", "writing"],
+    "run": ["runs", "ran", "running"],
+    "bring": ["brings", "brought", "bringing"],
+    "begin": ["begins", "began", "begun", "beginning"],
+    "keep": ["keeps", "kept", "keeping"],
+    "hold": ["holds", "held", "holding"],
+    "stand": ["stands", "stood", "standing"],
+    "hear": ["hears", "heard", "hearing"],
+    "let": ["lets", "letting"],
+    "put": ["puts", "putting"],
+    "read": ["reads", "reading"],
+    "lose": ["loses", "lost", "losing"],
+    "lead": ["leads", "led", "leading"],
+    "leave": ["leaves", "left", "leaving"],
+    "feel": ["feels", "felt", "feeling"],
+    "set": ["sets", "setting"],
+    "cut": ["cuts", "cutting"],
+    "show": ["shows", "showed", "shown", "showing"],
+    "break": ["breaks", "broke", "broken", "breaking"],
+    "drive": ["drives", "drove", "driven", "driving"],
+    "buy": ["buys", "bought", "buying"],
+    "pay": ["pays", "paid", "paying"],
+    "meet": ["meets", "met", "meeting"],
+    "sit": ["sits", "sat", "sitting"],
+    "send": ["sends", "sent", "sending"],
+    "fall": ["falls", "fell", "fallen", "falling"],
+    "build": ["builds", "built", "building"],
+    "spend": ["spends", "spent", "spending"],
+    "grow": ["grows", "grew", "grown", "growing"],
+    "win": ["wins", "won", "winning"],
+    "teach": ["teaches", "taught", "teaching"],
+    "catch": ["catches", "caught", "catching"],
+    "draw": ["draws", "drew", "drawn", "drawing"],
+    "choose": ["chooses", "chose", "chosen", "choosing"],
+    "eat": ["eats", "ate", "eaten", "eating"],
+    "fly": ["flies", "flew", "flown", "flying"],
+    "drink": ["drinks", "drank", "drunk", "drinking"],
+    "sing": ["sings", "sang", "sung", "singing"],
+    "swim": ["swims", "swam", "swum", "swimming"],
+    "lie": ["lies", "lay", "lain", "lying"],
+    "rise": ["rises", "rose", "risen", "rising"],
+    "throw": ["throws", "threw", "thrown", "throwing"],
+    "wear": ["wears", "wore", "worn", "wearing"],
+    "hide": ["hides", "hid", "hidden", "hiding"],
+    "fight": ["fights", "fought", "fighting"],
+    "sleep": ["sleeps", "slept", "sleeping"],
+    "forget": ["forgets", "forgot", "forgotten", "forgetting"],
+    "sell": ["sells", "sold", "selling"],
+    "bear": ["bears", "bore", "borne", "bearing"],
+    "shake": ["shakes", "shook", "shaken", "shaking"],
+    "bite": ["bites", "bit", "bitten", "biting"],
+    "blow": ["blows", "blew", "blown", "blowing"],
+    "dig": ["digs", "dug", "digging"],
+    "hang": ["hangs", "hung", "hanging"],
+    "hit": ["hits", "hitting"],
+    "hurt": ["hurts", "hurting"],
+    "lay": ["lays", "laid", "laying"],
+    "light": ["lights", "lit", "lighting"],
+    "quit": ["quits", "quitting"],
+    "ride": ["rides", "rode", "ridden", "riding"],
+    "ring": ["rings", "rang", "rung", "ringing"],
+    "seek": ["seeks", "sought", "seeking"],
+    "shoot": ["shoots", "shot", "shooting"],
+    "shut": ["shuts", "shutting"],
+    "spread": ["spreads", "spreading"],
+    "steal": ["steals", "stole", "stolen", "stealing"],
+    "stick": ["sticks", "stuck", "sticking"],
+    "strike": ["strikes", "struck", "striking"],
+    "swear": ["swears", "swore", "sworn", "swearing"],
+    "sweep": ["sweeps", "swept", "sweeping"],
+    "tear": ["tears", "tore", "torn", "tearing"],
+    "wake": ["wakes", "woke", "woken", "waking"],
+}
+
+_IRREGULAR_NOUNS = {
+    "child": ["children"],
+    "man": ["men"],
+    "woman": ["women"],
+    "foot": ["feet"],
+    "tooth": ["teeth"],
+    "goose": ["geese"],
+    "mouse": ["mice"],
+    "louse": ["lice"],
+    "person": ["people", "persons"],
+    "ox": ["oxen"],
+    "leaf": ["leaves"],
+    "life": ["lives"],
+    "knife": ["knives"],
+    "wife": ["wives"],
+    "half": ["halves"],
+    "self": ["selves"],
+    "calf": ["calves"],
+    "wolf": ["wolves"],
+    "shelf": ["shelves"],
+    "loaf": ["loaves"],
+    "thief": ["thieves"],
+    "sheep": [],
+    "deer": [],
+    "fish": [],
+    "species": [],
+    "series": [],
+    "crisis": ["crises"],
+    "analysis": ["analyses"],
+    "thesis": ["theses"],
+    "hypothesis": ["hypotheses"],
+    "phenomenon": ["phenomena"],
+    "criterion": ["criteria"],
+    "datum": ["data"],
+    "medium": ["media"],
+    "cactus": ["cacti", "cactuses"],
+    "focus": ["foci", "focuses"],
+    "fungus": ["fungi", "funguses"],
+    "nucleus": ["nuclei"],
+    "stimulus": ["stimuli"],
+    "syllabus": ["syllabi", "syllabuses"],
+}
+
+
+def _apply_verb_suffix(word: str) -> set[str]:
+    """Generate regular verb inflections with spelling rules."""
+    forms = set()
+    # -s / -es
+    if word.endswith(("s", "sh", "ch", "x", "z", "o")):
+        forms.add(word + "es")
+    elif word.endswith("y") and len(word) > 1 and word[-2] not in "aeiou":
+        forms.add(word[:-1] + "ies")
+    else:
+        forms.add(word + "s")
+    # -ed
+    if word.endswith("e"):
+        forms.add(word + "d")
+    elif word.endswith("y") and len(word) > 1 and word[-2] not in "aeiou":
+        forms.add(word[:-1] + "ied")
+    elif len(word) >= 3 and word[-1] not in "aeiouwxy" and word[-2] in "aeiou" and word[-3] not in "aeiou":
+        forms.add(word + word[-1] + "ed")
+    else:
+        forms.add(word + "ed")
+    # -ing
+    if word.endswith("ie"):
+        forms.add(word[:-2] + "ying")
+    elif word.endswith("e") and not word.endswith("ee"):
+        forms.add(word[:-1] + "ing")
+    elif len(word) >= 3 and word[-1] not in "aeiouwxy" and word[-2] in "aeiou" and word[-3] not in "aeiou":
+        forms.add(word + word[-1] + "ing")
+    else:
+        forms.add(word + "ing")
+    return forms
+
+
+def _apply_noun_suffix(word: str) -> set[str]:
+    """Generate regular noun plural with spelling rules."""
+    forms = set()
+    if word.endswith(("s", "sh", "ch", "x", "z")):
+        forms.add(word + "es")
+    elif word.endswith("y") and len(word) > 1 and word[-2] not in "aeiou":
+        forms.add(word[:-1] + "ies")
+    elif word.endswith("f"):
+        forms.add(word[:-1] + "ves")
+        forms.add(word + "s")
+    elif word.endswith("fe"):
+        forms.add(word[:-2] + "ves")
+    else:
+        forms.add(word + "s")
+    return forms
+
+
 def get_inflections(word: str) -> list[str]:
-    """Use spaCy to generate common inflections for a lemma."""
+    """Generate common inflections for a lemma using irregulars lookup + spelling rules."""
     from services.nlp import get_nlp
     nlp = get_nlp()
     doc = nlp(word)
-    if not doc: return [word]
-    
+    if not doc:
+        return [word]
+
     token = doc[0]
-    # We use the lexeme from the spaCy vocab to find common forms
-    # This is a lightweight heuristic approach
     forms = {word.lower()}
-    
-    # Check common English suffixes for the base word
-    # (Since sm model doesn't have a full generator, we use a heuristic)
+
     if token.pos_ == "VERB":
-        forms.update({word + 's', word + 'ed', word + 'ing'})
+        if word.lower() in _IRREGULAR_VERBS:
+            forms.update(_IRREGULAR_VERBS[word.lower()])
+        else:
+            forms.update(_apply_verb_suffix(word.lower()))
     elif token.pos_ == "NOUN":
-        forms.update({word + 's', word + 'es'})
-        
-    return sorted(list(forms))
+        if word.lower() in _IRREGULAR_NOUNS:
+            forms.update(_IRREGULAR_NOUNS[word.lower()])
+        else:
+            forms.update(_apply_noun_suffix(word.lower()))
+
+    return sorted(forms)
 
 async def get_definition(word: str, session: AsyncSession) -> dict:
     repo = DictRepository(session)

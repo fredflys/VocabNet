@@ -44,7 +44,7 @@ class BookVocab(SQLModel, table=True):
     __tablename__ = "book_vocab"
     id: Optional[int] = Field(default=None, primary_key=True)
     book_id: str = Field(foreign_key="books.id", index=True, ondelete="CASCADE")
-    lemma: str
+    lemma: str = Field(index=True)
     pos: str
     occurrence_count: int = Field(default=1)
     first_chapter: int = Field(default=0)

@@ -61,13 +61,13 @@ async def get_book_vocab(
     page_size: int = Query(24, ge=1),
     search: str = Query(""),
     cefr: str = Query(""),
-    type: str = Query(""),
+    vocab_type: str = Query("", alias="type"),
     chapter: Optional[int] = Query(None),
     session: AsyncSession = Depends(get_session)
 ):
     """Paginated, searchable vocab for a book."""
     repo = BookRepository(session)
-    items, total_count = await repo.get_vocab_paginated(book_id, page, page_size, search, cefr, type, chapter)
+    items, total_count = await repo.get_vocab_paginated(book_id, page, page_size, search, cefr, vocab_type, chapter)
     
     return {
         "items": items,

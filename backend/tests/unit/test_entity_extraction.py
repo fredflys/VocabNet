@@ -15,9 +15,6 @@ def test_entity_refinement_heuristics():
     """
     lemma_data, entity_list, all_docs = run_pipeline(text)
     
-    # Debug print
-    print(f"DEBUG Entities: {[e['text'] + ' (' + e['label'] + ')' for e in entity_list]}")
-    
     # 1. Dirac should be a Character (Subject of 'calculated' and 'said')
     dirac = next((e for e in entity_list if "Dirac" in e["text"]), None)
     assert dirac is not None

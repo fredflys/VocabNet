@@ -40,7 +40,7 @@ async def load_book(book_id: str) -> Optional[dict]:
             try:
                 import json
                 d["chapters"] = json.loads(v.chapter_list) if v.chapter_list else []
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 d["chapters"] = []
                 
             d["count"] = v.occurrence_count

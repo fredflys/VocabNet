@@ -12,10 +12,12 @@ DATABASE_URL = f"sqlite+aiosqlite:///{DATABASE_PATH}"
 # Async engine for use with SQLModel/SQLAlchemy
 engine = create_async_engine(DATABASE_URL, echo=False)
 
+# Module-level session factory (created once, not per-request)
+async_session_factory = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
+
 # ORM Session provider for FastAPI Dependency Injection
 async def get_session() -> AsyncSession:
-    async_session = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-    async with async_session() as session:
+    async with async_session_factory() as session:
         yield session

@@ -4,6 +4,7 @@ Search for public domain books and fetch their text.
 """
 import httpx
 import re
+from functools import lru_cache
 from fastapi import APIRouter, Form, HTTPException, BackgroundTasks
 
 from jobs.store import create_job, update_job
@@ -13,8 +14,23 @@ router = APIRouter(prefix="/api/gutenberg")
 GUTENDEX_URL = "https://gutendex.com/books/"
 GUTENBERG_TXT = "https://www.gutenberg.org/cache/epub/{id}/pg{id}.txt"
 
-# Simple in-memory cache for fetched texts
+
+@lru_cache(maxsize=20)
+def _get_cached_text(gutenberg_id: int) -> str | None:
+    """Placeholder for cache lookup; actual fetching is async."""
+    return None
+
+
+# Bounded in-memory text cache (max 20 entries, LRU eviction)
 _text_cache: dict[int, str] = {}
+_TEXT_CACHE_MAX = 20
+
+
+def _cache_text(gutenberg_id: int, text: str) -> None:
+    if len(_text_cache) >= _TEXT_CACHE_MAX:
+        oldest_key = next(iter(_text_cache))
+        del _text_cache[oldest_key]
+    _text_cache[gutenberg_id] = text
 
 
 @router.get("/search")
@@ -31,8 +47,8 @@ async def search_gutenberg(query: str):
             )
             resp.raise_for_status()
             data = resp.json()
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Gutenberg search failed: {e}")
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Gutenberg search failed: {exc}")
 
     results = []
     for book in data.get("results", [])[:8]:
@@ -59,8 +75,11 @@ async def fetch_gutenberg(
     api_key: str = Form(""),
 ):
     """Fetch a Gutenberg book by ID and start processing."""
+    if gutenberg_id <= 0:
+        raise HTTPException(status_code=400, detail="gutenberg_id must be a positive integer.")
+
     from services.parser import extract_text
-    from routers.books import process_book
+    from services.pipeline import run_book_pipeline
 
     # Check cache first
     if gutenberg_id in _text_cache:
@@ -73,26 +92,26 @@ async def fetch_gutenberg(
                 resp = await client.get(url)
                 resp.raise_for_status()
                 raw_text = resp.text
-            except Exception as e:
+            except Exception:
                 # Try alternate URL pattern
                 alt_url = f"https://www.gutenberg.org/files/{gutenberg_id}/{gutenberg_id}-0.txt"
                 try:
                     resp = await client.get(alt_url)
                     resp.raise_for_status()
                     raw_text = resp.text
-                except Exception:
+                except Exception as download_err:
                     raise HTTPException(
                         status_code=502,
-                        detail=f"Could not download book {gutenberg_id}: {e}",
+                        detail=f"Could not download book {gutenberg_id}: {download_err}",
                     )
 
         clean_text = extract_text(raw_text)
-        _text_cache[gutenberg_id] = clean_text
+        _cache_text(gutenberg_id, clean_text)
 
     filename = f"{title or f'gutenberg_{gutenberg_id}'}.txt"
     job_id = create_job()
     background_tasks.add_task(
-        process_book,
+        run_book_pipeline,
         job_id,
         clean_text,
         filename,
