@@ -108,12 +108,16 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
                     for token in ent: token_to_entity[token.i] = e_key
 
             # B. Process Noun Chunks (Potential Concepts)
+            # Only multi-word chunks become concept entities. Single-word nouns
+            # must remain as vocabulary — promoting them here would eject them
+            # from the Lexicon via the entity collision guard below.
             for chunk_np in sent.noun_chunks:
                 np_text = chunk_np.text.strip()
-                if len(np_text) < 3 or len(np_text.split()) > 3 or _STRUCTURAL_IGNORE_RE.match(np_text): continue
+                np_words = np_text.split()
+                if len(np_text) < 3 or len(np_words) > 3 or _STRUCTURAL_IGNORE_RE.match(np_text): continue
                 np_key = np_text.lower()
-                
-                if zipf_frequency(np_key, 'en') < 3.5:
+
+                if len(np_words) >= 2 and zipf_frequency(np_key, 'en') < 3.5:
                     if np_key not in entity_map:
                         entity_map[np_key] = {
                             "text": np_text, "raw_label": "CONCEPT_CHUNK", "count": 0,
@@ -171,7 +175,13 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
                 if token.pos_ not in _VALID_POS or token.is_stop or not token.lemma_.isalpha() or len(token.lemma_) < 3:
                     continue
                 l_key = token.lemma_.lower()
-                if l_key in entity_map: continue
+                # Only skip vocab for proper-noun entities (characters, places, orgs).
+                # Concept-type entities should coexist in both the Lexicon and Intelligence tabs.
+                ent_data = entity_map.get(l_key)
+                if ent_data and ent_data["raw_label"] not in (
+                    "CONCEPT_CHUNK", "CONCEPT_UNIT", "CONCEPT_INJECTED"
+                ):
+                    continue
                 if l_key not in lemma_data:
                     lemma_data[l_key] = {
                         "lemma": l_key, "pos": token.pos_, "count": 0,

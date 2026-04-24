@@ -47,13 +47,16 @@ def is_difficult(lemma: str, user_level: str = "B1") -> tuple[bool, str | None]:
 def filter_vocabulary(
     lemma_data: dict,
     user_level: str = "B1",
-    top_n: int = 500,
+    top_n: int = 3000,
 ) -> list[dict]:
     """
-    Filter and rank the vocabulary.
-    Returns list of top frequency words. Words now carry a CEFR label
-    and an 'is_difficult' flag relative to the user level. We NO LONGER discard easy words
-    so that level-based filters in the UI always show data.
+    Filter and rank the vocabulary with difficulty-aware prioritization.
+
+    ALL words above the user's CEFR level are kept unconditionally — these
+    are the difficult words the tool exists to surface. The top_n cap only
+    applies to words at or below the user's level, which fills the remaining
+    slots sorted by in-book frequency. Easy words are still included so
+    level-based UI filters always show data.
     """
     results = []
 
@@ -65,6 +68,14 @@ def filter_vocabulary(
             "is_difficult": difficult
         })
 
-    # Sort by frequency in book, descending (most important words first)
-    results.sort(key=lambda x: x["count"], reverse=True)
-    return results[:top_n]
+    # Partition: difficult words always survive the cap
+    above_level = [w for w in results if w["is_difficult"]]
+    at_or_below = [w for w in results if not w["is_difficult"]]
+
+    # Sort each partition by in-book frequency for display ordering
+    above_level.sort(key=lambda x: x["count"], reverse=True)
+    at_or_below.sort(key=lambda x: x["count"], reverse=True)
+
+    # Cap only applies to easier words
+    remaining = max(0, top_n - len(above_level))
+    return above_level + at_or_below[:remaining]

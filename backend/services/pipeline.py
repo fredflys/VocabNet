@@ -66,17 +66,14 @@ async def run_book_pipeline(
         for doc in all_docs:
             phrasal_verb_matches.extend(detect_phrasal_verbs(doc))
             
-        pv_seen = set()
-        pv_deduped = []
+        pv_map = {}
         for pv in phrasal_verb_matches:
-            if pv["lemma"] not in pv_seen:
-                pv_seen.add(pv["lemma"])
-                pv_deduped.append(pv)
+            key = pv["lemma"]
+            if key in pv_map:
+                pv_map[key]["count"] += pv["count"]
             else:
-                for existing in pv_deduped:
-                    if existing["lemma"] == pv["lemma"]:
-                        existing["count"] += pv["count"]
-                        break
+                pv_map[key] = pv
+        pv_deduped = list(pv_map.values())
         
         all_phrase_matches = idiom_matches + collocation_matches + pv_deduped
         update_job(job_id, progress=58)

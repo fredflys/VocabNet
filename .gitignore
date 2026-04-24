@@ -30,6 +30,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.claude/
 
 # --- VocabNet Data ---
 # We ignore the actual user database and book uploads
