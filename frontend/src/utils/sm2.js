@@ -14,6 +14,7 @@ export function createSM2State() {
     status: 'new',        // new | learning | review | mastered
     nextReview: null,      // ISO date string
     lastReview: null,
+    mastery_source: 'study',
   }
 }
 
@@ -97,13 +98,16 @@ export function getStudySession(vocab, sm2Data, knownWords, maxCards = 20, chapt
   for (const entry of vocab) {
     if (knownWords.has(entry.lemma)) continue
 
+    const sm2 = sm2Data[entry.lemma]
+    // Skip auto-mastered words — they don't need study
+    if (sm2?.mastery_source === 'auto') continue
+
     // Chapter filter: skip words not in the selected chapter
     if (chapterFilter != null && chapterFilter > 0) {
       const chapters = entry.chapters || []
       if (chapters.length > 0 && !chapters.includes(chapterFilter)) continue
     }
 
-    const sm2 = sm2Data[entry.lemma]
     if (!sm2 || sm2.status === 'new') {
       newWords.push(entry)
     } else if (sm2.status === 'mastered') {
@@ -126,18 +130,25 @@ export function getStudySession(vocab, sm2Data, knownWords, maxCards = 20, chapt
 export function calcReadiness(vocab, sm2Data, knownWords) {
   if (vocab.length === 0) return 100
   let score = 0
+  let total = 0
 
   for (const entry of vocab) {
+    const sm2 = sm2Data[entry.lemma]
+    // Exclude auto-mastered words from readiness calculation entirely
+    if (sm2?.mastery_source === 'auto') continue
+
+    total += 1
+
     if (knownWords.has(entry.lemma)) {
       score += 1
       continue
     }
-    const sm2 = sm2Data[entry.lemma]
     if (!sm2) continue
     if (sm2.status === 'mastered') score += 1
     else if (sm2.status === 'review') score += 0.5
     else if (sm2.status === 'learning') score += 0.25
   }
 
-  return Math.round((score / vocab.length) * 100)
+  if (total === 0) return 100
+  return Math.round((score / total) * 100)
 }

@@ -5,7 +5,7 @@ import { recordSession, updateStreak } from '../utils/studyStore'
 export default function ActiveRecallView({ book, sm2Data, onUpdate, onBack, chapterFilter }) {
   const cards = useMemo(
     () => getStudySession(book?.vocab || [], sm2Data, new Set(), 20, chapterFilter)
-            .filter(e => e.definition || e.simple_def),
+            .filter(e => e.simple_def || e.translation),
     [book, sm2Data, chapterFilter]
   )
 
@@ -59,9 +59,20 @@ export default function ActiveRecallView({ book, sm2Data, onUpdate, onBack, chap
       updateStreak()
     }
 
-    const pct = sessionStats.reviewed > 0
-      ? Math.round((sessionStats.correct / sessionStats.reviewed) * 100)
-      : 0
+    if (sessionStats.reviewed === 0) {
+      return (
+        <div className="study-finish texture-paper" style={{ padding: '4rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📭</div>
+          <h2 className="serif-title" style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>No Cards Available</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '2.5rem', lineHeight: 1.6 }}>
+            No words with definitions are available for active recall. Try Flashcards instead, or process a book with an AI provider to generate definitions.
+          </p>
+          <button className="btn--primary" onClick={onBack}>Back to Dashboard</button>
+        </div>
+      )
+    }
+
+    const pct = Math.round((sessionStats.correct / sessionStats.reviewed) * 100)
 
     return (
       <div className="study-finish texture-paper" style={{ padding: '4rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
@@ -76,7 +87,7 @@ export default function ActiveRecallView({ book, sm2Data, onUpdate, onBack, chap
     )
   }
 
-  const definition = card.simple_def || card.definition || ''
+  const definition = card.simple_def || card.translation || ''
 
   return (
     <div className="cloze-view" style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

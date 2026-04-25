@@ -111,6 +111,13 @@ class UserVocab(SQLModel, table=True):
     interval_days: float = Field(default=0.0)
     next_review_date: Optional[str] = Field(default=None)
     last_reviewed: Optional[str] = Field(default=None)
+    mastery_source: str = Field(default="study")  # "study" | "auto" | "manual"
+
+class UserProfile(SQLModel, table=True):
+    __tablename__ = "user_profile"
+    id: int = Field(default=1, primary_key=True)  # Singleton
+    cefr_level: str = Field(default="B1")
+    updated_at: str = Field(default="")
 
 class UserSession(SQLModel, table=True):
     __tablename__ = "user_sessions"

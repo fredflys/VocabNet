@@ -95,6 +95,12 @@ class Distractor(BaseModel):
 
 # ── Request Models ───────────────────────────────────────────────────────────
 
+class UserProfileResponse(BaseModel):
+    cefr_level: str
+
+class UserProfileUpdateReq(BaseModel):
+    cefr_level: str
+
 class VocabUpdate(BaseModel):
     status: str
     reps: int
@@ -102,6 +108,7 @@ class VocabUpdate(BaseModel):
     interval_days: float
     next_review_date: Optional[str]
     last_reviewed: Optional[str]
+    mastery_source: str = "study"
 
 class UserVocabUpdateReq(RootModel):
     root: Dict[str, VocabUpdate]

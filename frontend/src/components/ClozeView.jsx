@@ -15,7 +15,8 @@ function blankOut(sentence, lemma) {
 export default function ClozeView({ book, sm2Data, onUpdate, onBack, chapterFilter }) {
   const cards = useMemo(
     () => getStudySession(book?.vocab || [], sm2Data, new Set(), 20, chapterFilter)
-            .filter(e => e.example && e.example.length > 20),
+            .map(e => ({ ...e, _sentence: e.example || e.llm_example || '' }))
+            .filter(e => e._sentence.length > 20),
     [book, sm2Data, chapterFilter]
   )
 
@@ -31,7 +32,7 @@ export default function ClozeView({ book, sm2Data, onUpdate, onBack, chapterFilt
 
   const blanked = useMemo(() => {
     if (!card) return { text: '', found: false }
-    return blankOut(card.example, card.lemma)
+    return blankOut(card._sentence, card.lemma)
   }, [card])
 
   const handleCheck = useCallback(() => {
@@ -73,9 +74,20 @@ export default function ClozeView({ book, sm2Data, onUpdate, onBack, chapterFilt
       updateStreak()
     }
 
-    const pct = sessionStats.reviewed > 0
-      ? Math.round((sessionStats.correct / sessionStats.reviewed) * 100)
-      : 0
+    if (sessionStats.reviewed === 0) {
+      return (
+        <div className="study-finish texture-paper" style={{ padding: '4rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📭</div>
+          <h2 className="serif-title" style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>No Cards Available</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '2.5rem', lineHeight: 1.6 }}>
+            No words with example sentences are available for fill-in-the-blank. Try Flashcards instead, or process a book with an AI provider to generate examples.
+          </p>
+          <button className="btn--primary" onClick={onBack}>Back to Dashboard</button>
+        </div>
+      )
+    }
+
+    const pct = Math.round((sessionStats.correct / sessionStats.reviewed) * 100)
 
     return (
       <div className="study-finish texture-paper" style={{ padding: '4rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
@@ -91,7 +103,7 @@ export default function ClozeView({ book, sm2Data, onUpdate, onBack, chapterFilt
   }
 
   const hintParts = []
-  if (card.simple_def || card.definition) hintParts.push(card.simple_def || card.definition)
+  if (card.simple_def || card.translation) hintParts.push(card.simple_def || card.translation)
   if (card.cefr) hintParts.push(card.cefr)
   if (card.pos) hintParts.push(card.pos.toLowerCase())
 

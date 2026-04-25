@@ -11,6 +11,28 @@ import schemas
 
 router = APIRouter(prefix="/api/user", tags=["user"])
 
+@router.get("/profile", response_model=schemas.UserProfileResponse)
+async def get_profile(session: AsyncSession = Depends(get_session)):
+    """Get the user's CEFR profile."""
+    repo = UserRepository(session)
+    return await repo.get_profile()
+
+@router.put("/profile")
+async def update_profile(data: schemas.UserProfileUpdateReq = Body(...), session: AsyncSession = Depends(get_session)):
+    """Update the user's CEFR level and trigger auto-mastery."""
+    repo = UserRepository(session)
+    result = await repo.update_profile(data.cefr_level)
+    auto_count = await repo.auto_master_words(data.cefr_level)
+    return {**result, "auto_mastered_count": auto_count}
+
+@router.post("/auto-master")
+async def auto_master(session: AsyncSession = Depends(get_session)):
+    """Manually trigger auto-mastery based on saved profile level."""
+    repo = UserRepository(session)
+    profile = await repo.get_profile()
+    count = await repo.auto_master_words(profile["cefr_level"])
+    return {"auto_mastered_count": count}
+
 @router.get("/vocab", response_model=Dict[str, schemas.VocabUpdate])
 async def get_user_vocab(session: AsyncSession = Depends(get_session)):
     """Fetch all global SM-2 states for the user."""

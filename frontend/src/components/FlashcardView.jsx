@@ -75,7 +75,7 @@ export default function FlashcardView({ book, sm2Data, onUpdate, onBack, chapter
     )
   }
 
-  const primaryDef = card.simple_def || card.definition || ''
+  const primaryDef = card.simple_def || card.translation || ''
   const bookEx = card.example || ''
 
   return (

@@ -1,8 +1,9 @@
 from typing import List, Dict, Optional, Any
 from sqlalchemy import select, func
-from models import UserVocab, UserSession, UserStat, BookVocab, DictCache
+from models import UserVocab, UserSession, UserStat, BookVocab, DictCache, UserProfile
 from repositories.base import BaseRepository
 from datetime import datetime, timedelta
+from services.filter import _CEFR_ORDER
 
 class UserRepository(BaseRepository):
     async def get_all_vocab(self) -> Dict[str, dict]:
@@ -19,7 +20,8 @@ class UserRepository(BaseRepository):
                 ease=state.get("ease", 2.5),
                 interval_days=state.get("interval_days", 0.0),
                 next_review_date=state.get("next_review_date"),
-                last_reviewed=state.get("last_reviewed")
+                last_reviewed=state.get("last_reviewed"),
+                mastery_source=state.get("mastery_source", "study")
             )
             await self.session.merge(user_vocab)
         await self.session.commit()
@@ -66,6 +68,67 @@ class UserRepository(BaseRepository):
                 stats.last_study_date = today
         
         await self.session.commit()
+
+    async def get_profile(self) -> dict:
+        stmt = select(UserProfile).where(UserProfile.id == 1)
+        row = (await self.session.execute(stmt)).scalar_one_or_none()
+        if row:
+            return row.model_dump()
+        return {"id": 1, "cefr_level": "B1", "updated_at": ""}
+
+    async def update_profile(self, cefr_level: str) -> dict:
+        now = datetime.now().isoformat()
+        profile = UserProfile(id=1, cefr_level=cefr_level, updated_at=now)
+        await self.session.merge(profile)
+        await self.session.commit()
+        return {"cefr_level": cefr_level, "updated_at": now}
+
+    async def auto_master_words(self, cefr_level: str) -> int:
+        """Batch-create UserVocab entries with mastery_source='auto' for all
+        BookVocab lemmas at or below the user's CEFR level. Does NOT overwrite
+        entries with mastery_source='study' or 'manual'."""
+        user_idx = _CEFR_ORDER.index(cefr_level) if cefr_level in _CEFR_ORDER else 2
+        eligible_levels = _CEFR_ORDER[:user_idx + 1]  # e.g. B1 -> [A1, A2, B1]
+
+        # Get all unique lemmas from BookVocab at eligible levels
+        stmt = select(BookVocab.lemma).where(
+            BookVocab.cefr.in_(eligible_levels)
+        ).group_by(BookVocab.lemma)
+        result = await self.session.execute(stmt)
+        candidate_lemmas = {row.lemma for row in result.all()}
+
+        if not candidate_lemmas:
+            return 0
+
+        # Get existing user vocab entries that should NOT be overwritten
+        stmt_existing = select(UserVocab.lemma, UserVocab.mastery_source).where(
+            UserVocab.lemma.in_(candidate_lemmas)
+        )
+        existing = await self.session.execute(stmt_existing)
+        existing_map = {row.lemma: row.mastery_source for row in existing.all()}
+
+        count = 0
+        for lemma in candidate_lemmas:
+            existing_source = existing_map.get(lemma)
+            # Skip if already has study or manual mastery
+            if existing_source in ("study", "manual"):
+                continue
+            # Create or update with auto mastery
+            user_vocab = UserVocab(
+                lemma=lemma,
+                status="mastered",
+                reps=0,
+                ease=2.5,
+                interval_days=0.0,
+                next_review_date=None,
+                last_reviewed=None,
+                mastery_source="auto"
+            )
+            await self.session.merge(user_vocab)
+            count += 1
+
+        await self.session.commit()
+        return count
 
     async def get_master_ledger(self) -> List[dict]:
         # Using the optimized query from the plan

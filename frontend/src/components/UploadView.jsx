@@ -10,7 +10,7 @@ const ACCEPTED_TYPES = '.txt,.epub'
 export default function UploadView({ onProcessing, settings, onBack }) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [file, setFile] = useState(null)
-  const [level, setLevel] = useState(settings?.level || 'B1')
+  const [level, setLevel] = useState(settings?.cefrLevel || 'B1')
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState('file')

@@ -15,7 +15,7 @@ function shuffle(arr) {
 export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, chapterFilter }) {
   const cards = useMemo(
     () => getStudySession(book?.vocab || [], sm2Data, new Set(), 20, chapterFilter)
-            .filter(e => e.definition || e.simple_def),
+            .filter(e => e.simple_def || e.translation),
     [book, sm2Data, chapterFilter]
   )
 
@@ -40,23 +40,23 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
         
         let finalDistractors = distractors
         if (finalDistractors.length < 3) {
-          const localPool = (book?.vocab || []).filter(e => e.lemma !== card.lemma && (e.definition || e.simple_def))
+          const localPool = (book?.vocab || []).filter(e => e.lemma !== card.lemma && (e.simple_def || e.translation))
           const additional = localPool.sort(() => Math.random() - 0.5).slice(0, 3 - finalDistractors.length)
-          finalDistractors = [...finalDistractors, ...additional.map(e => ({ lemma: e.lemma, definition: e.simple_def || e.definition }))]
+          finalDistractors = [...finalDistractors, ...additional.map(e => ({ lemma: e.lemma, definition: e.simple_def || e.translation }))]
         }
 
         const all = [
-          { lemma: card.lemma, definition: card.simple_def || card.definition },
+          { lemma: card.lemma, definition: card.simple_def || card.translation },
           ...finalDistractors
         ]
         setOptions(shuffle(all))
       } catch (err) {
         console.error('Failed to fetch distractors', err)
         const localDistractors = (book?.vocab || [])
-          .filter(e => e.lemma !== card.lemma && (e.definition || e.simple_def))
+          .filter(e => e.lemma !== card.lemma && (e.simple_def || e.translation))
           .sort(() => Math.random() - 0.5)
           .slice(0, 3)
-        const all = [card, ...localDistractors].map(e => ({ lemma: e.lemma, definition: e.simple_def || e.definition }))
+        const all = [card, ...localDistractors].map(e => ({ lemma: e.lemma, definition: e.simple_def || e.translation }))
         setOptions(shuffle(all))
       } finally {
         setLoadingOptions(false)
@@ -100,9 +100,20 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
       updateStreak()
     }
 
-    const pct = sessionStats.reviewed > 0
-      ? Math.round((sessionStats.correct / sessionStats.reviewed) * 100)
-      : 0
+    if (sessionStats.reviewed === 0) {
+      return (
+        <div className="study-finish texture-paper" style={{ padding: '4rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📭</div>
+          <h2 className="serif-title" style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>No Cards Available</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '2.5rem', lineHeight: 1.6 }}>
+            No words with definitions are available for quiz mode. Try Flashcards instead, or process a book with an AI provider to generate definitions.
+          </p>
+          <button className="btn--primary" onClick={onBack}>Back to Dashboard</button>
+        </div>
+      )
+    }
+
+    const pct = Math.round((sessionStats.correct / sessionStats.reviewed) * 100)
 
     return (
       <div className="study-finish texture-paper" style={{ padding: '4rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
@@ -170,7 +181,7 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
             return (
               <button
                 key={i}
-                className="quiz-option"
+                className={`quiz-option ${selected === null ? 'quiz-option--hoverable' : ''}`}
                 disabled={selected !== null}
                 style={{
                   display: 'flex',
@@ -186,7 +197,6 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
                   transition: 'all 0.2s',
                   textAlign: 'left'
                 }}
-                className={`quiz-option ${selected === null ? 'quiz-option--hoverable' : ''}`}
                 onClick={() => handleSelect(i)}
               >
                 <span className="quiz-option__letter" style={{ fontWeight: 800, background: 'rgba(0,0,0,0.05)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
@@ -202,7 +212,7 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
           <div className="quiz-card__feedback" style={{ marginTop: '2.5rem', textAlign: 'center' }}>
             {isCorrect
               ? <div className="quiz-card__correct" style={{ fontSize: '1.2rem', color: 'var(--feedback-correct)', fontWeight: 700, marginBottom: '1.5rem' }}>✅ Correct!</div>
-              : <div className="quiz-card__wrong" style={{ fontSize: '1.2rem', color: 'var(--feedback-wrong)', fontWeight: 700, marginBottom: '1.5rem' }}>❌ The answer was "{card.simple_def || card.definition}"</div>
+              : <div className="quiz-card__wrong" style={{ fontSize: '1.2rem', color: 'var(--feedback-wrong)', fontWeight: 700, marginBottom: '1.5rem' }}>❌ The answer was "{card.simple_def || card.translation}"</div>
             }
             <button className="btn--primary" onClick={handleNext} style={{ width: '100%', padding: '1rem', borderRadius: '12px', fontSize: '1.1rem' }}>
               Next →

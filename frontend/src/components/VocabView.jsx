@@ -213,7 +213,11 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
   }, [selectedChapter, book.id, book.vocab, setIsLoading])
 
   const handleToggleKnown = useCallback((lemma, isKnown) => {
-    onUpdate(lemma, { ...sm2Data[lemma], status: isKnown ? 'learning' : 'mastered' })
+    onUpdate(lemma, {
+      ...sm2Data[lemma],
+      status: isKnown ? 'learning' : 'mastered',
+      mastery_source: isKnown ? 'study' : 'manual'
+    })
   }, [sm2Data, onUpdate])
 
   const handleSpeak = (word) => {

@@ -87,3 +87,39 @@ export async function fetchUserStats() {
 export function updateStreak() {
   // Now handled by the backend's /api/user/session automatically.
 }
+
+// ── Profile ────────────────────────────────────────────────────────────────
+
+export async function fetchProfile() {
+  try {
+    const res = await fetch(`${API}/api/user/profile`)
+    if (res.ok) return await res.json()
+  } catch (e) {
+    console.error('Failed to fetch profile', e)
+  }
+  return { cefr_level: 'B1' }
+}
+
+export async function updateProfile(data) {
+  try {
+    const res = await fetch(`${API}/api/user/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (res.ok) return await res.json()
+  } catch (e) {
+    console.error('Failed to update profile', e)
+  }
+  return null
+}
+
+export async function triggerAutoMaster() {
+  try {
+    const res = await fetch(`${API}/api/user/auto-master`, { method: 'POST' })
+    if (res.ok) return await res.json()
+  } catch (e) {
+    console.error('Failed to trigger auto-master', e)
+  }
+  return { auto_mastered_count: 0 }
+}
