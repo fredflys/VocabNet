@@ -1,11 +1,8 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { calcReadiness, isDueToday } from '../utils/sm2'
-
-function cleanTitle(title) {
-  if (!title) return 'Untitled'
-  return title.replace(/\.(epub|txt|pdf|mobi)$/i, '').replace(/[_-]/g, ' ')
-}
+import { cleanTitle } from '../utils/format'
+import { fadeUp } from '../utils/motion'
 
 export default function StudyDashboard({ 
   books, sm2Data, onSelectBook
@@ -69,7 +66,7 @@ export default function StudyDashboard({
       </div>
 
       {book ? (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div {...fadeUp}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
             <h3 style={{ fontSize: '1.5rem', margin: 0 }}>{cleanTitle(book.title)} Insights</h3>
             {book.chapters && book.chapters.length > 0 && (

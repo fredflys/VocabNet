@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { fadeUp } from '../../utils/motion';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -25,9 +26,8 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', background: 'var(--bg-subtle)' }}>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <motion.div
+            {...fadeUp}
             style={{ maxWidth: '600px', width: '100%', background: 'var(--bg-card)', padding: '3rem', borderRadius: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' }}
           >
             <div style={{ fontSize: '3rem', marginBottom: '1.5rem', textAlign: 'center' }}>⚠️</div>

@@ -9,13 +9,14 @@ import TOCTrigger from './TOCTrigger'
 import HighlightedSentence from './common/HighlightedSentence'
 import { API } from '../utils/config'
 import { cleanTitle } from '../utils/format'
+import { fadeUp } from '../utils/motion'
 
 function EntityCard({ entity }) {
   const labelColors = {
-    'Character': { bg: '#ecfdf5', text: '#065f46', border: '#10b981' },
-    'Location': { bg: '#eff6ff', text: '#1e40af', border: '#3b82f6' },
-    'Organization': { bg: '#fdf2f8', text: '#9d174d', border: '#ec4899' },
-    'Concept': { bg: '#f5f3ff', text: '#5b21b6', border: '#8b5cf6' }
+    'Character': { bg: 'var(--entity-character-bg)', text: 'var(--entity-character-text)', border: 'var(--entity-character)' },
+    'Location': { bg: 'var(--entity-location-bg)', text: 'var(--entity-location-text)', border: 'var(--entity-location)' },
+    'Organization': { bg: 'var(--entity-org-bg)', text: 'var(--entity-org-text)', border: 'var(--entity-org)' },
+    'Concept': { bg: 'var(--entity-concept-bg)', text: 'var(--entity-concept-text)', border: 'var(--entity-concept)' }
   }
   const color = labelColors[entity.label] || labelColors['Concept']
   const count = entity.occurrence_count || entity.count || 1
@@ -402,10 +403,9 @@ export default function VocabView({ book, sm2Data, onUpdate, onBack, onSelectBoo
             </div>          </>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{ 
+            <motion.div
+              {...fadeUp}
+              style={{
                 padding: '4rem 3rem', 
                 background: 'var(--bg-card)', 
                 borderRadius: '28px', 

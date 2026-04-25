@@ -10,10 +10,10 @@ function speak(word, voice) {
 }
 
 const GRADES = [
-  { value: 0, label: 'Again', color: '#ef4444', key: '1' },
-  { value: 1, label: 'Hard',  color: '#f59e0b', key: '2' },
-  { value: 2, label: 'Good',  color: '#6366f1', key: '3' },
-  { value: 3, label: 'Easy',  color: '#22c55e', key: '4' },
+  { value: 0, label: 'Again', color: 'var(--grade-again)', key: '1' },
+  { value: 1, label: 'Hard',  color: 'var(--grade-hard)',  key: '2' },
+  { value: 2, label: 'Good',  color: 'var(--grade-good)',  key: '3' },
+  { value: 3, label: 'Easy',  color: 'var(--grade-easy)',  key: '4' },
 ]
 
 export default function FlashcardView({ book, sm2Data, onUpdate, onBack, chapterFilter }) {
@@ -157,8 +157,7 @@ export default function FlashcardView({ book, sm2Data, onUpdate, onBack, chapter
                 <button
                   key={g.value}
                   className="grade-btn"
-                  className="grade-btn"
-                  style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: `2px solid ${g.color}`, background: 'var(--bg-card)', color: g.color, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', '--btn-color': g.color }}
+                  style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius)', border: `2px solid ${g.color}`, background: 'var(--bg-card)', color: g.color, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', '--btn-color': g.color }}
                   onClick={() => handleGrade(g.value)}
                 >
                   <span className="grade-btn__label">{g.label}</span>

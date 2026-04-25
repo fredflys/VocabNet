@@ -80,7 +80,7 @@ export default function ProcessingView({ jobId, fileName, onComplete, onCancel }
             <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                style={{ background: 'white', padding: '4rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}
+                style={{ background: 'var(--bg-card)', padding: '4rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}
             >
                 <div className="loading-bar" style={{ position: 'relative', marginBottom: '3rem', height: '8px', borderRadius: '4px', background: 'var(--bg-subtle)', overflow: 'hidden' }}>
                     <motion.div 

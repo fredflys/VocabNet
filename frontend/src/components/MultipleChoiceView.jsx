@@ -155,13 +155,13 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
             
             if (selected !== null) {
               if (opt.lemma === card.lemma) {
-                bg = 'rgba(34, 197, 94, 0.1)'
-                border = '1px solid #22c55e'
-                color = '#16a34a'
+                bg = 'var(--feedback-correct-bg)'
+                border = '1px solid var(--feedback-correct)'
+                color = 'var(--feedback-correct)'
               } else if (i === selected) {
-                bg = 'rgba(239, 68, 68, 0.1)'
-                border = '1px solid #ef4444'
-                color = '#dc2626'
+                bg = 'var(--feedback-wrong-bg)'
+                border = '1px solid var(--feedback-wrong)'
+                color = 'var(--feedback-wrong)'
               } else {
                 opacity = 0.5
               }
@@ -201,8 +201,8 @@ export default function MultipleChoiceView({ book, sm2Data, onUpdate, onBack, ch
         {selected !== null && (
           <div className="quiz-card__feedback" style={{ marginTop: '2.5rem', textAlign: 'center' }}>
             {isCorrect
-              ? <div className="quiz-card__correct" style={{ fontSize: '1.2rem', color: '#16a34a', fontWeight: 700, marginBottom: '1.5rem' }}>✅ Correct!</div>
-              : <div className="quiz-card__wrong" style={{ fontSize: '1.2rem', color: '#dc2626', fontWeight: 700, marginBottom: '1.5rem' }}>❌ The answer was "{card.simple_def || card.definition}"</div>
+              ? <div className="quiz-card__correct" style={{ fontSize: '1.2rem', color: 'var(--feedback-correct)', fontWeight: 700, marginBottom: '1.5rem' }}>✅ Correct!</div>
+              : <div className="quiz-card__wrong" style={{ fontSize: '1.2rem', color: 'var(--feedback-wrong)', fontWeight: 700, marginBottom: '1.5rem' }}>❌ The answer was "{card.simple_def || card.definition}"</div>
             }
             <button className="btn--primary" onClick={handleNext} style={{ width: '100%', padding: '1rem', borderRadius: '12px', fontSize: '1.1rem' }}>
               Next →

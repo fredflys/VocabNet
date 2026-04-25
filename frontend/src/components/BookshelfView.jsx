@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API } from '../utils/config'
 import { cleanTitle } from '../utils/format'
+import { fadeUp, staggerDelay } from '../utils/motion'
 
 function BookCard({ book, index, onSelect, onDeleted }) {
   const [isConfirming, setIsConfirming] = useState(false)
@@ -27,11 +28,11 @@ function BookCard({ book, index, onSelect, onDeleted }) {
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="book-item"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      {...fadeUp}
+      transition={staggerDelay(index)}
+      whileTap={{ scale: 0.98 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false)
@@ -52,7 +53,7 @@ function BookCard({ book, index, onSelect, onDeleted }) {
           color: 'white',
           position: 'relative',
           zIndex: 1,
-          boxShadow: isConfirming ? '0 0 0 4px #ef4444, var(--shadow)' : 'var(--shadow)',
+          boxShadow: isConfirming ? '0 0 0 4px var(--danger), var(--shadow)' : 'var(--shadow)',
           background: `linear-gradient(135deg, ${cardColor}, #00000066)`,
           transition: 'all 0.3s ease',
           filter: isConfirming ? 'grayscale(0.5) brightness(0.6)' : 'none',
@@ -82,7 +83,7 @@ function BookCard({ book, index, onSelect, onDeleted }) {
             top: '1rem',
             right: '1rem',
             height: '32px',
-            backgroundColor: '#ef4444',
+            backgroundColor: 'var(--danger)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -92,9 +93,9 @@ function BookCard({ book, index, onSelect, onDeleted }) {
             fontWeight: 900,
             fontSize: '0.9rem',
             // Skeuomorphism: Deep shadows and highlights
-            border: '1px solid #991b1b',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
-            backgroundImage: 'linear-gradient(to bottom, #f87171, #ef4444)',
+            border: '1px solid var(--danger-hover)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+            backgroundImage: 'none',
             overflow: 'hidden'
           }}
         >
@@ -159,7 +160,7 @@ export default function BookshelfView({ books, onSelect, onUpload, onDeleted, on
           <button 
             className="btn--secondary" 
             onClick={onViewMasterLedger}
-            style={{ background: 'white', padding: '0.8rem 1.5rem', borderRadius: '12px', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
+            style={{ padding: '0.8rem 1.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, background: 'var(--bg-card)' }}
           >
             <span>📖</span> Master Ledger
           </button>

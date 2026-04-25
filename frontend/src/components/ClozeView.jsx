@@ -143,11 +143,11 @@ export default function ClozeView({ book, sm2Data, onUpdate, onBack, chapterFilt
         ) : (
           <div className="cloze-card__result" style={{ marginTop: '1rem' }}>
             {isCorrect ? (
-              <div className="cloze-card__correct" style={{ padding: '1rem', background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', borderRadius: '12px', fontSize: '1.2rem', marginBottom: '2rem', textAlign: 'center' }}>
+              <div className="cloze-card__correct" style={{ padding: '1rem', background: 'var(--feedback-correct-bg)', color: 'var(--feedback-correct)', borderRadius: 'var(--radius)', fontSize: '1.2rem', marginBottom: '2rem', textAlign: 'center' }}>
                 ✅ Correct! — <strong>{card.lemma}</strong>
               </div>
             ) : (
-              <div className="cloze-card__wrong" style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', borderRadius: '12px', fontSize: '1.2rem', marginBottom: '2rem', textAlign: 'center' }}>
+              <div className="cloze-card__wrong" style={{ padding: '1rem', background: 'var(--feedback-wrong-bg)', color: 'var(--feedback-wrong)', borderRadius: 'var(--radius)', fontSize: '1.2rem', marginBottom: '2rem', textAlign: 'center' }}>
                 ❌ The answer was <strong>{card.lemma}</strong>
                 {input.trim() && <div><span style={{ fontSize: '1rem', opacity: 0.8 }}>(you wrote "{input.trim()}")</span></div>}
               </div>
@@ -158,13 +158,13 @@ export default function ClozeView({ book, sm2Data, onUpdate, onBack, chapterFilt
               <div className="grade-bar__buttons" style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
                 {isCorrect ? (
                   <>
-                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '2px solid #6366f1', background: 'var(--bg-card)', color: '#6366f1', fontWeight: 700, cursor: 'pointer' }} onClick={() => handleGrade(2)}>Good</button>
-                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '2px solid #22c55e', background: 'var(--bg-card)', color: '#22c55e', fontWeight: 700, cursor: 'pointer' }} onClick={() => handleGrade(3)}>Easy</button>
+                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius)', border: '2px solid var(--grade-good)', background: 'var(--bg-card)', color: 'var(--grade-good)', fontWeight: 700, cursor: 'pointer', '--btn-color': 'var(--grade-good)' }} onClick={() => handleGrade(2)}>Good</button>
+                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius)', border: '2px solid var(--grade-easy)', background: 'var(--bg-card)', color: 'var(--grade-easy)', fontWeight: 700, cursor: 'pointer', '--btn-color': 'var(--grade-easy)' }} onClick={() => handleGrade(3)}>Easy</button>
                   </>
                 ) : (
                   <>
-                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '2px solid #ef4444', background: 'var(--bg-card)', color: '#ef4444', fontWeight: 700, cursor: 'pointer' }} onClick={() => handleGrade(0)}>Again</button>
-                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: '2px solid #f59e0b', background: 'var(--bg-card)', color: '#f59e0b', fontWeight: 700, cursor: 'pointer' }} onClick={() => handleGrade(1)}>Hard</button>
+                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius)', border: '2px solid var(--grade-again)', background: 'var(--bg-card)', color: 'var(--grade-again)', fontWeight: 700, cursor: 'pointer', '--btn-color': 'var(--grade-again)' }} onClick={() => handleGrade(0)}>Again</button>
+                    <button className="grade-btn" style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius)', border: '2px solid var(--grade-hard)', background: 'var(--bg-card)', color: 'var(--grade-hard)', fontWeight: 700, cursor: 'pointer', '--btn-color': 'var(--grade-hard)' }} onClick={() => handleGrade(1)}>Hard</button>
                   </>
                 )}
               </div>

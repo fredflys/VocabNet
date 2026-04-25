@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import { getStudySession, gradeSM2, createSM2State } from '../utils/sm2'
-import { updateWordSM2, recordSession, updateStreak } from '../utils/studyStore'
+import { recordSession, updateStreak } from '../utils/studyStore'
 
 export default function ActiveRecallView({ book, sm2Data, onUpdate, onBack, chapterFilter }) {
   const cards = useMemo(

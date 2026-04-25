@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react'
 import GutenbergSearch from './GutenbergSearch'
 import { motion, useAnimation } from 'framer-motion'
+import { API } from '../utils/config'
+import { fadeUp } from '../utils/motion'
 
 const CEFR_LEVELS = ['A2', 'B1', 'B2', 'C1']
 const ACCEPTED_TYPES = '.txt,.epub'
@@ -47,7 +49,7 @@ export default function UploadView({ onProcessing, settings, onBack }) {
       formData.append('llm_provider', settings?.llmProvider || 'gemini')
       formData.append('api_key', settings?.apiKey || '')
 
-      const res = await fetch('http://localhost:8000/api/upload', { method: 'POST', body: formData })
+      const res = await fetch(`${API}/api/upload`, { method: 'POST', body: formData })
       if (!res.ok) throw new Error('Upload failed')
       const { job_id } = await res.json()
       onProcessing(job_id, file.name)
@@ -67,7 +69,7 @@ export default function UploadView({ onProcessing, settings, onBack }) {
         </p>
       </header>
 
-      <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '3rem', boxShadow: 'var(--shadow)' }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '3rem', boxShadow: 'var(--shadow)' }}>
         <div className="filter-pills" style={{ marginBottom: '3rem', width: 'fit-content', margin: '0 auto 3rem' }}>
           <button className={`filter-pill ${tab === 'file' ? 'filter-pill--active' : ''}`} onClick={() => setTab('file')}>📎 LOCAL FILE</button>
           <button className={`filter-pill ${tab === 'gutenberg' ? 'filter-pill--active' : ''}`} onClick={() => setTab('gutenberg')}>📚 GUTENBERG SEARCH</button>
@@ -100,10 +102,9 @@ export default function UploadView({ onProcessing, settings, onBack }) {
             </div>
 
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="error-banner" 
+              <motion.div
+                {...fadeUp}
+                className="error-banner"
                 style={{ marginTop: '1.5rem', textAlign: 'center', fontWeight: 600 }}
               >
                 ⚠️ {error}

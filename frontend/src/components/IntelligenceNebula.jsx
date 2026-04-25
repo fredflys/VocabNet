@@ -38,9 +38,10 @@ export default function IntelligenceNebula({ entities, bookTitle, onClose, total
   }
 
   // --- Helpers ---
+  // Canvas API requires raw hex — CSS variables can't be used here
+  const ENTITY_COLORS = { 'Character': '#10b981', 'Location': '#3b82f6', 'Organization': '#ec4899', 'Concept': '#8b5cf6' }
   const getColor = useCallback((type) => {
-    const colors = { 'Character': '#10b981', 'Location': '#3b82f6', 'Organization': '#ec4899', 'Concept': '#8b5cf6' }
-    return colors[type] || '#94a3b8'
+    return ENTITY_COLORS[type] || '#94a3b8'
   }, [])
 
   const graphData = useMemo(() => {

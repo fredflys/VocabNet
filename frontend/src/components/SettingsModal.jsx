@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { API } from '../utils/config'
+import { scaleIn, modalTransition } from '../utils/motion'
 
 const LANGUAGES = [
   'Chinese', 'Spanish', 'French', 'Japanese', 'Korean',
@@ -36,10 +37,10 @@ export default function SettingsModal({ settings, onSave, onClose, onPlacementQu
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <motion.div 
-        className="modal" 
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
+      <motion.div
+        className="modal"
+        {...scaleIn}
+        transition={modalTransition}
         onClick={e => e.stopPropagation()}
         style={{ padding: '3.5rem', borderRadius: 'var(--radius-lg)' }}
       >
@@ -94,7 +95,7 @@ export default function SettingsModal({ settings, onSave, onClose, onPlacementQu
                     padding: '1.25rem',
                     borderRadius: '16px',
                     border: `2px solid ${draft.llmProvider === p.id ? 'var(--primary)' : 'var(--border)'}`,
-                    background: draft.llmProvider === p.id ? 'rgba(var(--primary-rgb), 0.05)' : 'white',
+                    background: draft.llmProvider === p.id ? 'rgba(var(--primary-rgb), 0.05)' : 'var(--bg-card)',
                     transition: 'all 0.2s'
                   }}
                 >

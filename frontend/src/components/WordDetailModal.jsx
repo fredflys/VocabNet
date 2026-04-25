@@ -4,6 +4,7 @@ import { AppContext } from '../App'
 import CollapsibleList from './common/CollapsibleList'
 import HighlightedSentence from './common/HighlightedSentence'
 import { API } from '../utils/config'
+import { scaleIn, modalTransition } from '../utils/motion'
 
 export default function WordDetailModal({ entry, onClose, onSpeak, onSelectBook }) {
   const { setIsLoading } = useContext(AppContext)
@@ -57,11 +58,10 @@ export default function WordDetailModal({ entry, onClose, onSpeak, onSelectBook 
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <motion.div 
+      <motion.div
         className="modal"
-        initial={{ opacity: 0, scale: 0.95, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 30 }}
+        {...scaleIn}
+        transition={modalTransition}
         onClick={e => e.stopPropagation()}
         style={{ 
           maxWidth: '1100px', 

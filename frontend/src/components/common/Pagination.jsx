@@ -5,29 +5,31 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
 
   return (
     <div style={{ marginTop: '6rem', display: 'flex', justifyContent: 'center', gap: '2rem', alignItems: 'center' }}>
-      <button 
-        className="btn--secondary" 
-        disabled={currentPage === 1} 
-        onClick={() => onPageChange(currentPage - 1)} 
-        style={{ padding: '1.25rem 2.5rem', borderRadius: '16px', fontSize: '1.1rem' }}
+      <motion.button
+        className="btn--secondary"
+        disabled={currentPage === 1}
+        onClick={() => onPageChange(currentPage - 1)}
+        style={{ padding: '1.25rem 2.5rem', borderRadius: 'var(--radius)', fontSize: '1.1rem' }}
+        whileTap={{ scale: 0.97 }}
       >
         ← Previous Page
-      </button>
-      
+      </motion.button>
+
       <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-muted)' }}>
-        <span style={{ color: 'var(--text)' }}>{currentPage}</span> 
-        <span style={{ opacity: 0.4, margin: '0 0.5rem' }}>/</span> 
+        <span style={{ color: 'var(--text)' }}>{currentPage}</span>
+        <span style={{ opacity: 0.4, margin: '0 0.5rem' }}>/</span>
         {totalPages}
       </div>
-      
-      <button 
-        className="btn--secondary" 
-        disabled={currentPage === totalPages} 
-        onClick={() => onPageChange(currentPage + 1)} 
-        style={{ padding: '1.25rem 2.5rem', borderRadius: '16px', fontSize: '1.1rem' }}
+
+      <motion.button
+        className="btn--secondary"
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+        style={{ padding: '1.25rem 2.5rem', borderRadius: 'var(--radius)', fontSize: '1.1rem' }}
+        whileTap={{ scale: 0.97 }}
       >
         Next Page →
-      </button>
+      </motion.button>
     </div>
   )
 }
