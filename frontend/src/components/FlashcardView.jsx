@@ -20,8 +20,8 @@ export default function FlashcardView({ book, sm2Data, onUpdate, onBack, chapter
   const { settings } = useContext(AppContext)
   
   const cards = useMemo(
-    () => getStudySession(book?.vocab || [], sm2Data, new Set(), 20, chapterFilter),
-    [book, sm2Data, chapterFilter]
+    () => getStudySession(book?.vocab || [], sm2Data, settings.cefrLevel || 'B1', 20, chapterFilter),
+    [book, sm2Data, chapterFilter, settings.cefrLevel]
   )
 
   const [index, setIndex] = useState(0)

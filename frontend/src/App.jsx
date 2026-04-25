@@ -6,6 +6,7 @@ import StudyDashboard from './components/StudyDashboard'
 import UploadView from './components/UploadView'
 import SettingsModal from './components/SettingsModal'
 import PlacementQuiz from './components/PlacementQuiz'
+import BookAssessmentQuiz from './components/BookAssessmentQuiz'
 import FlashcardView from './components/FlashcardView'
 import ClozeView from './components/ClozeView'
 import MultipleChoiceView from './components/MultipleChoiceView'
@@ -31,7 +32,7 @@ const STUDY_COMPONENTS = {
 }
 
 function App() {
-  const [view, setView] = useState('dashboard') // dashboard | library | processing | vocab | upload | study
+  const [view, setView] = useState('dashboard') // dashboard | library | processing | vocab | upload | study | assessment
   const [books, setBooks] = useState([])
   const [selectedBook, setSelectedBook] = useState(null)
   const [sm2Data, setSm2Data] = useState({})
@@ -43,6 +44,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [studyMode, setStudyMode] = useState(null) // null | 'flashcard' | 'cloze' | 'mcq' | 'recall'
   const [studyChapterFilter, setStudyChapterFilter] = useState(null)
+  const [activeBookId, setActiveBookId] = useState(null)
 
   const [settings, setSettings] = useState(() => {
     // Migration: Check for legacy settings first
@@ -173,6 +175,7 @@ function App() {
         if (!resp.ok) throw new Error('Failed to load book')
         const fullBook = await resp.json()
         setSelectedBook(fullBook)
+        setActiveBookId(fullBook.id)
       } catch (err) {
         console.error(err)
         setIsLoading(false)
@@ -181,10 +184,77 @@ function App() {
       setIsLoading(false)
     } else {
       setSelectedBook(book)
+      setActiveBookId(book.id)
     }
     setStudyMode(mode)
     setStudyChapterFilter(chapter === 'All' ? null : chapter ? Number(chapter) : null)
     setView('study')
+  }
+
+  const handleStartAssessment = async (book, isRetake = false) => {
+    // Ensure we have full book data with vocab
+    let fullBook = book
+    if (!book.vocab) {
+      setIsLoading(true)
+      try {
+        const resp = await fetch(`${API}/api/library/${book.id}`)
+        if (!resp.ok) throw new Error('Failed to load book')
+        fullBook = await resp.json()
+      } catch (err) {
+        console.error(err)
+        setIsLoading(false)
+        return
+      }
+      setIsLoading(false)
+    }
+    setActiveBookId(fullBook.id || book.id)
+
+    // If retake, reset assessed entries for this book's unfamiliar words
+    if (isRetake && fullBook.vocab) {
+      const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+      const userIdx = CEFR.indexOf(settings.cefrLevel || 'B1')
+      const resets = {}
+      for (const v of fullBook.vocab) {
+        const wordIdx = CEFR.indexOf(v.cefr)
+        if (wordIdx >= 0 && wordIdx <= userIdx) continue
+        const sm2 = sm2Data[v.lemma]
+        if (sm2?.mastery_source === 'assessed') {
+          resets[v.lemma] = { status: 'new', mastery_source: 'study', reps: 0, ease: 2.5, interval: 0, nextReview: null, lastReview: null }
+        }
+      }
+      if (Object.keys(resets).length > 0) {
+        const updated = { ...sm2Data, ...resets }
+        setSm2Data(updated)
+        await updateSM2DataGlobal(resets)
+      }
+    }
+
+    setSelectedBook(fullBook)
+    setView('assessment')
+  }
+
+  const handleAssessmentComplete = async (results) => {
+    // Batch-update UserVocab for known words
+    const updates = {}
+    for (const lemma of results.known) {
+      updates[lemma] = {
+        status: 'mastered',
+        mastery_source: 'assessed',
+        ease: 2.5,
+        interval: 21,
+        reps: 4,
+        nextReview: null,
+        lastReview: new Date().toISOString().slice(0, 10),
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      const updated = { ...sm2Data, ...updates }
+      setSm2Data(updated)
+      await updateSM2DataGlobal(updates)
+    }
+    // Reload sm2Data from backend for consistency
+    await loadSM2()
+    setView('dashboard')
   }
 
   const StudyComponent = studyMode ? STUDY_COMPONENTS[studyMode] : null
@@ -213,8 +283,11 @@ function App() {
             <StudyDashboard
               books={books}
               sm2Data={sm2Data}
+              userLevel={settings.cefrLevel || 'B1'}
               onSelectBook={handleBookSelect}
               onStartStudy={handleStartStudy}
+              onStartAssessment={handleStartAssessment}
+              activeBookId={activeBookId}
             />
           )}
 
@@ -262,6 +335,16 @@ function App() {
               onUpdate={handleUpdateSM2}
               onBack={() => { setStudyMode(null); setView('dashboard') }}
               chapterFilter={studyChapterFilter}
+            />
+          )}
+
+          {view === 'assessment' && selectedBook && (
+            <BookAssessmentQuiz
+              book={selectedBook}
+              sm2Data={sm2Data}
+              userLevel={settings.cefrLevel || 'B1'}
+              onComplete={handleAssessmentComplete}
+              onCancel={() => setView('dashboard')}
             />
           )}
 

@@ -82,25 +82,29 @@ export function isDueToday(sm2State) {
   return sm2State.nextReview <= today
 }
 
+const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+
 /**
  * Get words for a study session, prioritized correctly.
+ * Skips at-or-below-level words (CEFR <= userLevel) and already-mastered words (unless due).
  * @param {Array} vocab - full vocab array from pipeline
  * @param {object} sm2Data - { [lemma]: SM2State }
- * @param {Set} knownWords - words marked as known
+ * @param {string} userLevel - user's CEFR level (e.g. 'B1')
  * @param {number} maxCards - max cards per session
  * @param {number|null} chapterFilter - if set, only include words from this chapter
  * @returns {Array} selected vocab entries for this session
  */
-export function getStudySession(vocab, sm2Data, knownWords, maxCards = 20, chapterFilter = null) {
+export function getStudySession(vocab, sm2Data, userLevel = 'B1', maxCards = 20, chapterFilter = null) {
+  const userIdx = CEFR_LEVELS.indexOf(userLevel)
   const due = []
   const newWords = []
 
   for (const entry of vocab) {
-    if (knownWords.has(entry.lemma)) continue
+    // Skip at-or-below-level words
+    const wordIdx = CEFR_LEVELS.indexOf(entry.cefr)
+    if (wordIdx >= 0 && wordIdx <= userIdx) continue
 
     const sm2 = sm2Data[entry.lemma]
-    // Skip auto-mastered words — they don't need study
-    if (sm2?.mastery_source === 'auto') continue
 
     // Chapter filter: skip words not in the selected chapter
     if (chapterFilter != null && chapterFilter > 0) {
@@ -111,7 +115,7 @@ export function getStudySession(vocab, sm2Data, knownWords, maxCards = 20, chapt
     if (!sm2 || sm2.status === 'new') {
       newWords.push(entry)
     } else if (sm2.status === 'mastered') {
-      // Only include mastered if due
+      // Only include mastered if due for review
       if (isDueToday(sm2)) due.push(entry)
     } else if (isDueToday(sm2)) {
       due.push(entry)
@@ -125,30 +129,27 @@ export function getStudySession(vocab, sm2Data, knownWords, maxCards = 20, chapt
 
 /**
  * Calculate readiness score.
+ * Readiness = mastered unfamiliar / total unfamiliar.
+ * At-or-below-level words (CEFR <= userLevel) are treated as known.
+ * @param {Array} vocab - vocab entries with .cefr and .lemma
+ * @param {object} sm2Data - { [lemma]: SM2State }
+ * @param {string} userLevel - user's CEFR level (e.g. 'B1')
  * @returns {number} 0-100
  */
-export function calcReadiness(vocab, sm2Data, knownWords) {
-  if (vocab.length === 0) return 100
-  let score = 0
-  let total = 0
+export function calcReadiness(vocab, sm2Data, userLevel = 'B1') {
+  const userIdx = CEFR_LEVELS.indexOf(userLevel)
+  let unfamiliarCount = 0
+  let masteredCount = 0
 
   for (const entry of vocab) {
+    const wordIdx = CEFR_LEVELS.indexOf(entry.cefr)
+    if (wordIdx >= 0 && wordIdx <= userIdx) continue // skip at-or-below-level
+
+    unfamiliarCount++
     const sm2 = sm2Data[entry.lemma]
-    // Exclude auto-mastered words from readiness calculation entirely
-    if (sm2?.mastery_source === 'auto') continue
-
-    total += 1
-
-    if (knownWords.has(entry.lemma)) {
-      score += 1
-      continue
-    }
-    if (!sm2) continue
-    if (sm2.status === 'mastered') score += 1
-    else if (sm2.status === 'review') score += 0.5
-    else if (sm2.status === 'learning') score += 0.25
+    if (sm2?.status === 'mastered') masteredCount++
   }
 
-  if (total === 0) return 100
-  return Math.round((score / total) * 100)
+  if (unfamiliarCount === 0) return 100
+  return Math.round((masteredCount / unfamiliarCount) * 100)
 }

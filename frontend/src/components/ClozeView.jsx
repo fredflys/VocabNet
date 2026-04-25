@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useContext } from 'react'
 import { getStudySession, gradeSM2, createSM2State } from '../utils/sm2'
 import { recordSession, updateStreak } from '../utils/studyStore'
+import { AppContext } from '../App'
 
 /**
  * Replace the target lemma in a sentence with a blank.
@@ -13,11 +14,13 @@ function blankOut(sentence, lemma) {
 }
 
 export default function ClozeView({ book, sm2Data, onUpdate, onBack, chapterFilter }) {
+  const { settings } = useContext(AppContext)
+
   const cards = useMemo(
-    () => getStudySession(book?.vocab || [], sm2Data, new Set(), 20, chapterFilter)
+    () => getStudySession(book?.vocab || [], sm2Data, settings.cefrLevel || 'B1', 20, chapterFilter)
             .map(e => ({ ...e, _sentence: e.example || e.llm_example || '' }))
             .filter(e => e._sentence.length > 20),
-    [book, sm2Data, chapterFilter]
+    [book, sm2Data, chapterFilter, settings.cefrLevel]
   )
 
   const [index, setIndex] = useState(0)

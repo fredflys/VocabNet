@@ -1,14 +1,16 @@
 import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { calcReadiness, isDueToday } from '../utils/sm2'
+import { isDueToday } from '../utils/sm2'
 import { cleanTitle } from '../utils/format'
 import { fadeUp } from '../utils/motion'
 import { API } from '../utils/config'
 
+const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+
 export default function StudyDashboard({
-  books, sm2Data, onSelectBook, onStartStudy
+  books, sm2Data, userLevel, onSelectBook, onStartStudy, onStartAssessment, activeBookId
 }) {
-  const [selectedBookId, setSelectedBookId] = useState('none')
+  const [selectedBookId, setSelectedBookId] = useState(activeBookId || 'none')
   const [selectedChapter, setSelectedChapter] = useState('All')
   const [fullBook, setFullBook] = useState(null)
   const [bookLoading, setBookLoading] = useState(false)
@@ -32,40 +34,68 @@ export default function StudyDashboard({
   const book = fullBook
 
   const stats = useMemo(() => {
-    if (!book) return { totalWords: 0, totalIdioms: 0, studyMastered: 0, autoMastered: 0, learningWords: 0, readiness: 0, dueCount: 0 }
+    if (!book) return { belowLevel: 0, unfamiliarCount: 0, mastered: 0, readiness: 0, dueCount: 0 }
 
-    const totalWords = book.total_words || 0
-    const totalIdioms = book.idiom_count || 0
+    const userIdx = CEFR.indexOf(userLevel)
 
     const filteredVocab = selectedChapter === 'All'
       ? book.vocab || []
       : (book.vocab || []).filter(v => v.chapters && v.chapters.includes(Number(selectedChapter)))
 
-    let studyMastered = 0
-    let autoMastered = 0
-    let learningWords = 0
-
+    // Partition vocab into at-or-below-level vs above-level (unfamiliar)
+    const belowLevel = []
+    const unfamiliar = []
     for (const v of filteredVocab) {
-      const sm2 = sm2Data[v.lemma]
-      if (!sm2) continue
-      if (sm2.mastery_source === 'auto') {
-        autoMastered++
-      } else if (sm2.status === 'mastered' || sm2.reps >= 4) {
-        studyMastered++
-      } else if (sm2.status === 'learning' || (sm2.reps > 0 && sm2.reps < 4)) {
-        learningWords++
+      const wordIdx = CEFR.indexOf(v.cefr)
+      if (wordIdx >= 0 && wordIdx <= userIdx) {
+        belowLevel.push(v)
+      } else {
+        unfamiliar.push(v)
       }
     }
 
-    const readiness = calcReadiness(filteredVocab, sm2Data, new Set())
+    // Mastered = above-level words where sm2 status is 'mastered'
+    const mastered = unfamiliar.filter(v => {
+      const sm2 = sm2Data[v.lemma]
+      return sm2 && sm2.status === 'mastered'
+    }).length
 
-    const bookLemmas = new Set(filteredVocab.map(v => v.lemma))
-    const dueCount = Object.entries(sm2Data || {})
-      .filter(([lemma, state]) => bookLemmas.has(lemma) && state.mastery_source !== 'auto' && isDueToday(state))
+    // Readiness = (known at-or-below + mastered above) / total vocab
+    const readiness = filteredVocab.length > 0
+      ? Math.round(((belowLevel.length + mastered) / filteredVocab.length) * 100)
+      : 100
+
+    // Due = unfamiliar words due for review
+    const dueCount = unfamiliar.filter(v => {
+      const sm2 = sm2Data[v.lemma]
+      return sm2 && isDueToday(sm2)
+    }).length
+
+    return {
+      belowLevel: belowLevel.length,
+      unfamiliarCount: unfamiliar.length,
+      mastered, readiness, dueCount
+    }
+  }, [book, sm2Data, selectedChapter, userLevel])
+
+  // Check if assessment quiz has been taken for this book
+  const quizTaken = useMemo(() => {
+    if (!book?.vocab) return false
+    const userIdx = CEFR.indexOf(userLevel)
+    return book.vocab.some(v => {
+      const wordIdx = CEFR.indexOf(v.cefr)
+      if (wordIdx >= 0 && wordIdx <= userIdx) return false // skip at-or-below-level
+      const sm2 = sm2Data[v.lemma]
+      return sm2?.mastery_source === 'assessed'
+    })
+  }, [book, sm2Data, userLevel])
+
+  // Global vocabulary stats
+  const globalMastered = useMemo(() => {
+    return Object.values(sm2Data)
+      .filter(s => s.status === 'mastered' && s.mastery_source !== 'auto')
       .length
-
-    return { totalWords, totalIdioms, studyMastered, autoMastered, learningWords, readiness, dueCount }
-  }, [book, sm2Data, selectedChapter])
+  }, [sm2Data])
 
   return (
     <div className="study-dashboard">
@@ -76,6 +106,11 @@ export default function StudyDashboard({
             <p style={{ color: 'var(--text-muted)', marginTop: '1rem', fontSize: '1.1rem' }}>
               Select a volume from your archive to begin your daily curriculum.
             </p>
+            {globalMastered > 0 && (
+              <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', fontSize: '0.95rem' }}>
+                Your vocabulary: <strong style={{ color: 'var(--text)' }}>{globalMastered}</strong> words mastered across <strong style={{ color: 'var(--text)' }}>{books.length}</strong> volume{books.length !== 1 ? 's' : ''}
+              </p>
+            )}
           </div>
         </div>
       </header>
@@ -123,11 +158,11 @@ export default function StudyDashboard({
             </div>
             <div style={{ padding: '2rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>MASTERED</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--success)' }}>{stats.studyMastered}</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--success)' }}>{stats.mastered}</div>
             </div>
             <div style={{ padding: '2rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>BELOW LEVEL</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-muted)' }}>{stats.autoMastered}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>AT/BELOW LEVEL</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-muted)' }}>{stats.belowLevel}</div>
             </div>
             <div style={{ padding: '2rem', background: 'var(--primary)', color: 'white', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Review Due</div>
@@ -137,6 +172,24 @@ export default function StudyDashboard({
 
           <h3 style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Learning Curricula</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+            {!quizTaken ? (
+              <button
+                className="btn--primary"
+                onClick={() => onStartAssessment(book)}
+                style={{ padding: '1.5rem', fontSize: '1.15rem', fontWeight: 800, borderRadius: '16px', background: 'linear-gradient(135deg, var(--accent), var(--primary))' }}
+              >
+                Take Book Assessment — estimate what you already know
+              </button>
+            ) : (
+              <div style={{ textAlign: 'right', marginBottom: '0.25rem' }}>
+                <button
+                  onClick={() => onStartAssessment(book, true)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                >
+                  Retake Assessment (resets quiz-based mastery)
+                </button>
+              </div>
+            )}
             <button
               className="btn--primary"
               onClick={() => onStartStudy(book, 'flashcard', selectedChapter)}
