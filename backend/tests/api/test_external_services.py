@@ -1,13 +1,12 @@
 import pytest
 from models import DictCache
 from sqlalchemy import select
-from services.dictionary import FreeDictionaryAPIProvider
+from services.dictionary import WiktionaryProvider
 
 @pytest.mark.asyncio
 async def test_dictionary_lookup_with_mock(client, session, mocker):
-    # Mock the resolve method of the first provider
-    # We patch the instance method resolve of FreeDictionaryAPIProvider
-    mock_resolve = mocker.patch.object(FreeDictionaryAPIProvider, "resolve")
+    # Mock the resolve method of the first provider in the chain (Wiktionary)
+    mock_resolve = mocker.patch.object(WiktionaryProvider, "resolve")
     mock_resolve.return_value = {
         "definition": "Mocked definition",
         "phonetics": "/m闊檏/",

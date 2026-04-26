@@ -85,7 +85,12 @@ async def test_job_not_found(client):
 @pytest.mark.asyncio
 async def test_dictionary_lookup_nonexistent_word(client, mocker):
     """Dictionary lookup for a gibberish word should return empty definition."""
-    from services.dictionary import FreeDictionaryAPIProvider, DictionaryAPIDevProvider
+    from services.dictionary import (
+        WiktionaryProvider, CambridgeDictionaryProvider,
+        FreeDictionaryAPIProvider, DictionaryAPIDevProvider,
+    )
+    mocker.patch.object(WiktionaryProvider, "resolve", return_value=None)
+    mocker.patch.object(CambridgeDictionaryProvider, "resolve", return_value=None)
     mocker.patch.object(FreeDictionaryAPIProvider, "resolve", return_value=None)
     mocker.patch.object(DictionaryAPIDevProvider, "resolve", return_value=None)
 

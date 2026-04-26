@@ -1,15 +1,28 @@
 import json
+import re
 import httpx
+import logging
 from datetime import datetime
 from abc import ABC, abstractmethod
 from sqlalchemy.ext.asyncio import AsyncSession
 from repositories.dict_repository import DictRepository
+
+log = logging.getLogger(__name__)
 
 # ── Global Connection Pooling ────────────────────────────────────────────────
 _http_client = httpx.AsyncClient(
     limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
     timeout=8.0
 )
+
+_STRIP_HTML = re.compile(r"<[^>]+>")
+_COLLAPSE_WS = re.compile(r"\s+")
+
+def _clean_html(text: str) -> str:
+    """Strip HTML tags and collapse whitespace."""
+    text = _STRIP_HTML.sub("", text)
+    text = _COLLAPSE_WS.sub(" ", text)
+    return text.strip()
 
 # ── Provider interface ───────────────────────────────────────────────────────
 
@@ -19,6 +32,160 @@ class DictionaryProvider(ABC):
     @abstractmethod
     async def resolve(self, word: str) -> dict | None:
         pass
+
+
+class WiktionaryProvider(DictionaryProvider):
+    """Wiktionary REST API — largest free English dictionary (~7M entries)."""
+    name = "Wiktionary"
+    BASE_URL = "https://en.wiktionary.org/api/rest_v1/page/definition"
+
+    async def resolve(self, word: str) -> dict | None:
+        try:
+            resp = await _http_client.get(
+                f"{self.BASE_URL}/{word}",
+                headers={"User-Agent": "VocabNet/1.0"},
+            )
+            if resp.status_code != 200:
+                return None
+            return self._parse(resp.json())
+        except Exception:
+            return None
+
+    def _parse(self, data: dict) -> dict | None:
+        # Wiktionary groups by language code; we only want English
+        en_entries = data.get("en", [])
+        if not en_entries:
+            return None
+
+        definition, example, pos, phonetics = "", "", "", ""
+        all_meanings = []
+
+        for entry in en_entries:
+            if entry.get("language") != "English":
+                continue
+            entry_pos = entry.get("partOfSpeech", "")
+            if not pos:
+                pos = entry_pos
+
+            definitions = entry.get("definitions", [])
+            if not definitions:
+                continue
+
+            meaning_block = {"partOfSpeech": entry_pos, "definitions": []}
+            for defn in definitions:
+                raw_def = defn.get("definition", "")
+                def_text = _clean_html(raw_def)
+                # Skip overly short or meta definitions
+                if not def_text or len(def_text) < 3:
+                    continue
+
+                # Extract first example
+                def_ex = ""
+                for ex in defn.get("parsedExamples", [])[:1]:
+                    def_ex = _clean_html(ex.get("example", ""))
+                if not def_ex:
+                    for ex in defn.get("examples", [])[:1]:
+                        def_ex = _clean_html(ex) if isinstance(ex, str) else ""
+
+                meaning_block["definitions"].append({"definition": def_text, "example": def_ex})
+                if not definition:
+                    definition = def_text
+                if not example and def_ex:
+                    example = def_ex
+
+            if meaning_block["definitions"]:
+                all_meanings.append(meaning_block)
+
+        if not definition and not all_meanings:
+            return None
+        return {
+            "definition": definition,
+            "phonetics": phonetics,
+            "api_example": example,
+            "pos": pos,
+            "source": self.name,
+            "all_meanings": all_meanings,
+        }
+
+
+class CambridgeDictionaryProvider(DictionaryProvider):
+    """Cambridge Dictionary scraper — learner-quality definitions with IPA."""
+    name = "Cambridge"
+    BASE_URL = "https://dictionary.cambridge.org/dictionary/english"
+
+    async def resolve(self, word: str) -> dict | None:
+        try:
+            slug = word.lower().replace(" ", "-")
+            resp = await _http_client.get(
+                f"{self.BASE_URL}/{slug}",
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                follow_redirects=True,
+            )
+            if resp.status_code != 200:
+                return None
+            return self._parse(resp.text)
+        except Exception:
+            return None
+
+    def _parse(self, html: str) -> dict | None:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+
+        entries = soup.select(".entry-body__el")
+        if not entries:
+            return None
+
+        definition, example, pos, phonetics = "", "", "", ""
+        all_meanings = []
+
+        for entry in entries:
+            # Part of speech
+            pos_el = entry.select_one(".pos")
+            entry_pos = pos_el.get_text(strip=True) if pos_el else ""
+            if not pos and entry_pos:
+                pos = entry_pos
+
+            # IPA pronunciation (prefer UK)
+            if not phonetics:
+                ipa_el = entry.select_one(".ipa")
+                if ipa_el:
+                    phonetics = f"/{ipa_el.get_text(strip=True)}/"
+
+            # Definitions
+            meaning_block = {"partOfSpeech": entry_pos, "definitions": []}
+            for db in entry.select(".def-block"):
+                def_el = db.select_one(".def")
+                if not def_el:
+                    continue
+                def_text = def_el.get_text(" ", strip=True).rstrip(":")
+                if not def_text:
+                    continue
+
+                # First example sentence
+                def_ex = ""
+                eg_el = db.select_one(".eg")
+                if eg_el:
+                    def_ex = eg_el.get_text(" ", strip=True)
+
+                meaning_block["definitions"].append({"definition": def_text, "example": def_ex})
+                if not definition:
+                    definition = def_text
+                if not example and def_ex:
+                    example = def_ex
+
+            if meaning_block["definitions"]:
+                all_meanings.append(meaning_block)
+
+        if not definition and not all_meanings:
+            return None
+        return {
+            "definition": definition,
+            "phonetics": phonetics,
+            "api_example": example,
+            "pos": pos,
+            "source": self.name,
+            "all_meanings": all_meanings,
+        }
 
 
 class FreeDictionaryAPIProvider(DictionaryProvider):
@@ -112,6 +279,8 @@ class DictionaryAPIDevProvider(DictionaryProvider):
         }
 
 PROVIDERS: list[DictionaryProvider] = [
+    WiktionaryProvider(),
+    CambridgeDictionaryProvider(),
     FreeDictionaryAPIProvider(),
     DictionaryAPIDevProvider(),
 ]
@@ -331,21 +500,31 @@ def get_inflections(word: str) -> list[str]:
 async def get_definition(word: str, session: AsyncSession) -> dict:
     repo = DictRepository(session)
     cached = await repo.get_by_lemma(word)
-    if cached is not None:
+
+    # Return cached if it has a real definition
+    if cached is not None and cached.get("definition"):
         return cached
 
+    # Re-try: either no cache or previously cached empty result
     result = None
     for provider in PROVIDERS:
-        result = await provider.resolve(word)
+        try:
+            result = await provider.resolve(word)
+        except Exception:
+            log.debug("Provider %s failed for '%s'", provider.name, word)
+            continue
         if result and result.get("definition"):
             break
 
-    if not result:
+    if not result or not result.get("definition"):
+        # Keep existing cache if it has other useful data (phonetics, etc.)
+        if cached is not None:
+            return cached
         result = {**_EMPTY_RESULT}
-    
+
     # Add inflections for the highlighter
     result["inflections"] = get_inflections(word)
-    
+
     await repo.upsert(word, result)
     return result
 
