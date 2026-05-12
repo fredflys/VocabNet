@@ -9,6 +9,7 @@ import re
 import spacy
 from collections import defaultdict
 from wordfreq import zipf_frequency
+from services.normalizer import normalize_text, normalize_lemma
 
 _nlp = None
 
@@ -121,6 +122,7 @@ def _extract_vocab_and_entities(
         if token.pos_ not in _VALID_POS or token.is_stop or not token.lemma_.isalpha() or len(token.lemma_) < 3:
             continue
         l_key = token.lemma_.lower()
+        l_key = normalize_lemma(l_key)
         ent_data = entity_map.get(l_key)
         if ent_data and ent_data["raw_label"] not in (
             "CONCEPT_CHUNK", "CONCEPT_UNIT", "CONCEPT_INJECTED"
@@ -219,6 +221,7 @@ def run_pipeline(text: str, progress_callback=None) -> tuple:
     nlp = get_nlp()
     chapter_boundaries = _extract_chapter_boundaries(text)
     clean_text = _CHAPTER_MARKER_RE.sub("", text)
+    clean_text = normalize_text(clean_text)
 
     CHUNK_SIZE = 50_000
     chunks = _split_into_chunks(clean_text, CHUNK_SIZE)
